@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import Text, text
 from sqlalchemy import event
 from datetime import datetime
+from werkzeug.security import check_password_hash, generate_password_hash
 from db_instance import db  # Import the existing db instance
 
 # Models
@@ -25,6 +26,9 @@ class Users(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     is_active = db.Column(db.Boolean, default=True)
     profile_image = db.Column(db.String(255))
+
+    def check_password(self, password):
+        return check_password_hash(self.passhash, password)
     
     # Relationships
     quizzes_created = db.relationship('Quiz', backref='quiz_creator', foreign_keys='Quiz.creator_id', lazy=True)
@@ -47,9 +51,7 @@ def check_single_admin(mapper, connection, target):
         if admin_count >= 1:
             raise ValueError("Only one admin allowed. The admin is already predefined.")
 
-# -------------------------
 # Quiz Model
-# -------------------------
 class Quiz(db.Model):
     __tablename__ = 'quiz'
     
@@ -70,9 +72,7 @@ class Quiz(db.Model):
     # Relationships
     questions = db.relationship('Questions', backref='quiz', cascade="all, delete-orphan", lazy=True)
 
-# -------------------------
 # Questions Model
-# -------------------------
 class Questions(db.Model):
     __tablename__ = 'questions'
     
@@ -93,9 +93,7 @@ class Questions(db.Model):
     answers = db.relationship('Answers', backref='question', cascade="all, delete-orphan", lazy=True)
     user_responses = db.relationship('UserResponse', backref='question', lazy=True)
 
-# -------------------------
 # Answers Model
-# -------------------------
 class Answers(db.Model):
     __tablename__ = 'answers'
     
@@ -108,9 +106,7 @@ class Answers(db.Model):
     # Relationships
     user_responses = db.relationship('UserResponse', backref='selected_answer', lazy=True)
 
-# -------------------------
 # QuizAttempts Model
-# -------------------------
 class QuizAttempts(db.Model):
     __tablename__ = 'quiz_attempts'
     
@@ -129,23 +125,20 @@ class QuizAttempts(db.Model):
     user_responses = db.relationship('UserResponse', backref='attempt', cascade="all, delete-orphan", lazy=True)
     feedback = db.relationship('Feedback', backref='attempt', lazy=True)
 
-# -------------------------
 # UserResponse Model
-# -------------------------
 class UserResponse(db.Model):
     __tablename__ = 'user_responses'
     
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     question_id = db.Column(db.Integer, db.ForeignKey('questions.question_id'))
     answer_id = db.Column(db.Integer, db.ForeignKey('answers.id'))
+    attempt_id = db.Column(db.Integer, db.ForeignKey('quiz_attempts.id'))
     text_response = db.Column(db.Text)
     is_correct = db.Column(db.Boolean)
     points_earned = db.Column(db.Numeric(5, 2))
     response_time = db.Column(db.Integer)
 
-# -------------------------
 # UserSessions Model
-# -------------------------
 class UserSessions(db.Model):
     __tablename__ = 'user_sessions'
     
@@ -158,9 +151,7 @@ class UserSessions(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
 
-# -------------------------
 # PasswordResetToken Model
-# -------------------------
 class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
     
@@ -171,9 +162,7 @@ class PasswordResetToken(db.Model):
     expires_at = db.Column(db.DateTime, nullable=False)
     is_used = db.Column(db.Boolean, default=False)
 
-# -------------------------
 # Category Model
-# -------------------------
 class Category(db.Model):
     __tablename__ = 'categories'
     
@@ -188,18 +177,14 @@ class Category(db.Model):
 # Add a back_populates relationship for Quiz for categories:
 Quiz.categories = db.relationship('Category', secondary='quiz_categories', back_populates='quizzes', lazy=True)
 
-# -------------------------
 # QuizCategory (Junction) Model
-# -------------------------
 class QuizCategory(db.Model):
     __tablename__ = 'quiz_categories'
     
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), primary_key=True)
 
-# -------------------------
 # UserGroup Model
-# -------------------------
 class UserGroup(db.Model):
     __tablename__ = 'user_groups'
     
@@ -212,9 +197,7 @@ class UserGroup(db.Model):
     members = db.relationship('Users', secondary='group_members', back_populates='groups', lazy=True)
     assignments = db.relationship('QuizAssignment', backref='group', lazy=True)
 
-# -------------------------
 # GroupMember (Junction) Model
-# -------------------------
 class GroupMember(db.Model):
     __tablename__ = 'group_members'
     
@@ -222,9 +205,7 @@ class GroupMember(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     joined_at = db.Column(db.DateTime, default=datetime.now)
 
-# -------------------------
 # QuizAssignment Model
-# -------------------------
 class QuizAssignment(db.Model):
     __tablename__ = 'quiz_assignments'
     
@@ -238,9 +219,7 @@ class QuizAssignment(db.Model):
     
     assigner = db.relationship('Users', foreign_keys=[assigned_by], lazy=True)
 
-# -------------------------
 # Feedback Model
-# -------------------------
 class Feedback(db.Model):
     __tablename__ = 'feedback'
     
@@ -250,12 +229,26 @@ class Feedback(db.Model):
     feedback_text = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
-# -------------------------
-# UserStatistic Model (for leaderboards)
-# -------------------------
+# LeaderboardEntry Model
+class LeaderboardEntry(db.Model):
+    __tablename__ = 'leaderboard_entries'
+    
+    entry_id = db.Column(db.Integer, primary_key=True)
+    leaderboard_id = db.Column(db.Integer, db.ForeignKey('leaderboards.leaderboard_id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    score = db.Column(db.Integer, nullable=False)
+    rank = db.Column(db.Integer)
+    previous_rank = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
+    
+    # user = db.relationship('Users', backref='leaderboard_entries', lazy=True)
+
+# UserStatistic Model 
+# UserStatistic Model
 class UserStatistic(db.Model):
     __tablename__ = 'user_statistics'
-    
+
     stat_id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'))
     total_quizzes_taken = db.Column(db.Integer, default=0)
@@ -263,18 +256,15 @@ class UserStatistic(db.Model):
     total_questions_attempted = db.Column(db.Integer, default=0)
     total_points_earned = db.Column(db.Integer, default=0)
     average_score = db.Column(db.Numeric(5, 2), default=0)
-    fastest_completion_time = db.Column(db.Integer)  # in seconds
+    fastest_completion_time = db.Column(db.Integer) # in seconds
     longest_streak = db.Column(db.Integer, default=0)
     current_streak = db.Column(db.Integer, default=0)
     last_quiz_date = db.Column(db.DateTime)
     rank_points = db.Column(db.Integer, default=0)
     last_updated = db.Column(db.DateTime, default=datetime.now)
-    
-    leaderboard_entries = db.relationship('LeaderboardEntry', backref='statistics', lazy=True)
 
-# -------------------------
+
 # Leaderboard Model
-# -------------------------
 class Leaderboard(db.Model):
     __tablename__ = 'leaderboards'
     
@@ -291,26 +281,9 @@ class Leaderboard(db.Model):
     
     entries = db.relationship('LeaderboardEntry', backref='leaderboard', cascade="all, delete-orphan", lazy=True)
 
-# -------------------------
-# LeaderboardEntry Model
-# -------------------------
-class LeaderboardEntry(db.Model):
-    __tablename__ = 'leaderboard_entries'
-    
-    entry_id = db.Column(db.Integer, primary_key=True)
-    leaderboard_id = db.Column(db.Integer, db.ForeignKey('leaderboards.leaderboard_id', ondelete='CASCADE'))
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    score = db.Column(db.Integer, nullable=False)
-    rank = db.Column(db.Integer)
-    previous_rank = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    
-    user = db.relationship('Users', backref='leaderboard_entries', lazy=True)
 
-# -------------------------
+
 # Achievement Model
-# -------------------------
 class Achievement(db.Model):
     __tablename__ = 'achievements'
     
@@ -327,9 +300,7 @@ class Achievement(db.Model):
     
     users = db.relationship('Users', secondary='user_achievements', back_populates='achievements', lazy=True)
 
-# -------------------------
 # UserAchievement (Junction) Model
-# -------------------------
 class UserAchievement(db.Model):
     __tablename__ = 'user_achievements'
     
@@ -338,9 +309,7 @@ class UserAchievement(db.Model):
     earned_at = db.Column(db.DateTime, default=datetime.now)
     displayed = db.Column(db.Boolean, default=False)
 
-# -------------------------
 # Badge Model
-# -------------------------
 class Badge(db.Model):
     __tablename__ = 'badges'
     
@@ -353,9 +322,7 @@ class Badge(db.Model):
     
     users = db.relationship('Users', secondary='user_badges', back_populates='badges', lazy=True)
 
-# -------------------------
 # UserBadge (Junction) Model
-# -------------------------
 class UserBadge(db.Model):
     __tablename__ = 'user_badges'
     
@@ -364,9 +331,7 @@ class UserBadge(db.Model):
     awarded_at = db.Column(db.DateTime, default=datetime.now)
     is_displayed = db.Column(db.Boolean, default=True)
 
-# -------------------------
 # ActivityFeed Model
-# -------------------------
 class ActivityFeed(db.Model):
     __tablename__ = 'activity_feed'
     

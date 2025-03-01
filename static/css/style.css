@@ -1,0 +1,29 @@
+
+
+.signup_form{
+    margin: 20% auto;
+    
+}
+
+.form-container{
+    margin-right: 50%;
+    margin-top: 20%;
+}
+
+
+form{
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.navbar {
+    height: 70px; /* Set a fixed height for the navbar */
+}
+
+.navbar-logo {
+    height: 100%; /* Make the logo fill the height of the navbar */
+    max-height: 80px; /* Ensure the logo does not exceed the navbar height */
+    width: auto; /* Maintain the aspect ratio of the logo */
+}
