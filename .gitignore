@@ -11,7 +11,19 @@ __pycache__/
 # Flask instance folder
 instance/
 
+# Uploaded files
+static/uploads/*
+!static/uploads/.gitkeep
+
 # SQLite database
 *.sqlite3
 db.sqlite3
 
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+instance/
+instance/*
