@@ -20,11 +20,11 @@
     {% include 'authnavbar.html' %}
 
     <!-- Here I will show the flash errors or messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% with messages = get_flashed_messages() %}  <!-- Note: No with_categories=true here -->
         {% if messages %}
             <div class="container mt-3">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {% for message in messages %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>

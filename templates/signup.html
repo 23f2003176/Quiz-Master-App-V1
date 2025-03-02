@@ -5,50 +5,40 @@ Signup - Kuizu
 {% endblock %}
 
 {% block content %}
-
 <div class="form-container">
-    <form method = 'post' class="signup_form">
-    
-        
+    <form method="POST" action="{{ url_for('signup_post') }}" class="signup_form">
         <div class="mt-4">
             <h1>Signup</h1>
             <div class="mb-3">
-                <label for="email" class="form-label">Email address
-                <input type="email" class="form-control mt-1" id="exampleInputEmail1" aria-describedby="emailHelp" required>
+                <label for="email" class="form-label">Email address *</label>
+                <input type="email" class="form-control mt-1" id="email" name="email" aria-describedby="emailHelp" required>
                 <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
-            </label>
             </div>
-        
-            <div class="mb-3" >
-                <label for="username" class = "form-label">Username:
-                    <input type="text" name="username" id="username /" class="form-control mt-1" required>
-                </label>
-            </div>
-        
         
             <div class="mb-3">
-                <label for="password">Password:
-                    <input type="text" name="password" id="password /" class="form-control mt-1" required>
-                </label>
+                <label for="username" class="form-label">Username *</label>
+                <input type="text" name="username" id="username" class="form-control mt-1" required>
+            </div>
+        
+            <div class="mb-3">
+                <label for="password" class="form-label">Password *</label>
+                <input type="password" name="password" id="password" class="form-control mt-1" minlength="8" required>
             </div>
 
             <div class="mb-3">
-                <label for="password" class="mb-3">Confirm Password:
-                    <input type="text" name="password" id="password /" class="form-control mt-1" required>
-                </label>
+                <label for="confirm_password" class="form-label">Confirm Password *</label>
+                <input type="password" name="confirm_password" id="confirm_password" class="form-control mt-1" required>
             </div>
 
             <div class="mb-3">
-                <label class="form-check-label" for="checkbox">I agree to the terms and conditions
-                    <input type="checkbox" class="form-check-input" id="username" required>
+                <label class="form-check-label" for="terms">
+                    <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                    I agree to the terms and conditions *
                 </label>
             </div>
 
-            <button type="Signup" class="btn btn-success mt-3">Submit</button>
+            <button type="submit" class="btn btn-success mt-3">Sign Up</button>
         </div>
-    
-
-        
     </form>
 </div>
 {% endblock %}

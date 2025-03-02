@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask import session
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import relationship
 from sqlalchemy import Text, text
@@ -17,9 +18,9 @@ class Users(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     username = db.Column(db.String(50), nullable=False)
     passhash = db.Column(db.String(512), nullable=False)
-    role = db.Column(db.Enum('admin', 'teacher', 'student', name='user_roles', native_enum=False),
+    role = db.Column(db.Enum('admin','student', name='user_roles', native_enum=False),
                      nullable=False, default='student')
-    full_name = db.Column(db.String(100))
+    full_name = db.Column(db.String(100), default = 'Student')
     qualification = db.Column(db.String(100))
     dob = db.Column(db.Date)  # Date of birth
     last_login = db.Column(db.DateTime)
@@ -27,7 +28,27 @@ class Users(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     profile_image = db.Column(db.String(255))
 
+    def login(self):
+        self.last_login = datetime.now()
+
+        # Set session variables
+        session['user_id'] = self.id
+        session['username'] = self.username
+        session['role'] = self.role
+
+        db.session.commit()
+
+    @property
+    def password(self):
+        raise AttributeError('Password is not a readable attribute')
+    
+    @password.setter
+    def password(self,password):
+        self.passhash = generate_password_hash(password)
+
     def check_password(self, password):
+        if not password or not self.passhash:
+            return False
         return check_password_hash(self.passhash, password)
     
     # Relationships
@@ -46,10 +67,26 @@ class Users(db.Model):
 # Event listener to enforce single admin
 @event.listens_for(Users, "before_insert")
 def check_single_admin(mapper, connection, target):
+    """Checks if an admin already exists before inserting a new admin user"""
     if target.role == 'admin':
-        admin_count = connection.execute(text("SELECT COUNT(*) FROM users WHERE role = 'admin'")).scalar()
-        if admin_count >= 1:
-            raise ValueError("Only one admin allowed. The admin is already predefined.")
+        # Get current admin count
+        admin_count = connection.execute(
+            text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+        ).scalar()
+        
+        # If there's no admin yet, allow creation
+        if admin_count == 0:
+            return
+            
+        # If table is empty, allow first admin
+        total_users = connection.execute(
+            text("SELECT COUNT(*) FROM users")
+        ).scalar()
+        if total_users == 0:
+            return
+            
+        # Otherwise prevent additional admins
+        raise ValueError("Only one admin allowed. The admin is already predefined.")
 
 # Quiz Model
 class Quiz(db.Model):
