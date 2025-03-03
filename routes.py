@@ -43,6 +43,107 @@ def auth_required(func):
         return func(*args, **kwargs)
     return decorated_function
 
+
+
+
+#-------------
+# SIGNUP
+#-------------
+
+@app.route('/signup')
+def signup():
+    return render_template('signup.html')
+
+
+@app.route('/signup', methods=["POST"])
+def signup_post():
+    email = request.form.get('email')
+    username = request.form.get('username')
+    password = request.form.get('password')
+    cnf_password = request.form.get('confirm_password')
+
+    # Check if email is actullay an email
+    if not email or not email.strip():
+        flash("Email cannot be empty")
+        return redirect(url_for('signup'))
+
+    #  Check if user is educated
+    if '@' not in email:
+        flash("Please enter a valid email address")
+        return redirect(url_for('signup'))
+
+    # Check if email already exists
+    if Users.query.filter_by(email=email).first():
+        flash("Email already registered")
+        return redirect(url_for('signup'))
+
+    # checking if username is already taken
+    user = Users.query.filter_by(username=username).first()
+    if user:
+        flash("Username already exists")
+        return redirect(url_for('signup'))
+    
+    if not username.strip() or not password.strip():
+        flash("Username or password cannot be empty")
+        return redirect(url_for('signup'))
+
+    if len(password) < 8:
+        flash("Password must be at least 8 characters long")
+        return redirect(url_for('signup'))
+    
+    if cnf_password != password:
+        flash("Password does not match")
+        return redirect(url_for('signup'))
+    
+    # Create new user with email, username and password
+    new_user = Users(
+        email=email.strip().lower(),
+        username=username.strip(),
+        password=password  # This will trigger the password.setter
+    )
+    
+    db.session.add(new_user)
+    db.session.commit()
+    
+    flash("User successfully created")
+    return redirect(url_for('login'))
+
+
+
+#-------------
+# Login
+#-------------
+
+@app.route('/login')
+def login():
+    return render_template('login.html') # Handles GET request
+
+@app.route('/login', methods=["POST"])
+def login_post():
+    username = request.form.get('username')
+    password = request.form.get('password')
+
+    # Validate input
+    if not username or not password:
+        flash("Username and password are required")
+        return redirect(url_for('login'))
+
+    user = Users.query.filter_by(username=username).first()
+    if not user:
+        flash("User does not exist, check login details")
+        return redirect(url_for('login'))
+
+    if not user.check_password(password):
+        flash("Incorrect password")
+        return redirect(url_for('login'))
+
+    # Login successful
+    user.login()  # This will handle session creation and last_login update
+    flash("Login successful!")
+    return redirect(url_for('index'))
+
+
+
 #-------------
 # Home Page
 #-------------
@@ -53,13 +154,50 @@ def index():
     # if 'user_id' not in session:
     #     flash("Login to continue")    not required as alredy handed by the auth_required
     #     return redirect(url_for('login'))
-    return render_template('index.html', user = Users.query.get(session['user_id']))
+
+
+    # Redirect to admin dashboard if user is admin
+    user = Users.query.get(session['user_id'])
+    if user.role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    return render_template('index.html', user = user)
+
+
+#----------------
+# Admin Dashboard
+#----------------
+
+@app.route('/admin_dashboard')
+@auth_required 
+def admin_dashboard():
+    user = Users.query.get(session['user_id'])
+    return render_template('admin_dashboard.html', user=user)
+
+
+
+
+#-------------
+# Dashboard
+#-------------
+
+
+@app.route('/dashboard')
+@auth_required 
+def dashboard():
+    # if 'user_id' not in session:
+    #     flash("Login to continue")
+    #     return redirect(url_for('login'))
+    user = Users.query.get(session['user_id'])
+    return render_template('dashboard.html', user=user)
+
+
+
+
 
 
 #-------------
 # Profile
 #-------------
-
 
 @app.route('/profile')
 @auth_required 
@@ -141,119 +279,6 @@ def allowed_file(filename):
 
 
 
-
-#-------------
-# Dashboard
-#-------------
-
-
-@app.route('/dashboard')
-@auth_required 
-def dashboard():
-    # if 'user_id' not in session:
-    #     flash("Login to continue")
-    #     return redirect(url_for('login'))
-    user = Users.query.get(session['user_id'])
-    return render_template('dashboard.html', user=user)
-
-
-
-
-#-------------
-# Login
-#-------------
-
-@app.route('/login')
-def login():
-    return render_template('login.html') # Handles GET request
-
-@app.route('/login', methods=["POST"])
-def login_post():
-    username = request.form.get('username')
-    password = request.form.get('password')
-
-    # Validate input
-    if not username or not password:
-        flash("Username and password are required")
-        return redirect(url_for('login'))
-
-    user = Users.query.filter_by(username=username).first()
-    if not user:
-        flash("User does not exist, check login details")
-        return redirect(url_for('login'))
-
-    if not user.check_password(password):
-        flash("Incorrect password")
-        return redirect(url_for('login'))
-
-    # Login successful
-    user.login()  # This will handle session creation and last_login update
-    flash("Login successful!")
-    return redirect(url_for('index'))
-
-
-
-#-------------
-# SIGNUP
-#-------------
-
-@app.route('/signup')
-def signup():
-    return render_template('signup.html')
-
-
-@app.route('/signup', methods=["POST"])
-def signup_post():
-    email = request.form.get('email')
-    username = request.form.get('username')
-    password = request.form.get('password')
-    cnf_password = request.form.get('confirm_password')
-
-    # Check if email is actullay an email
-    if not email or not email.strip():
-        flash("Email cannot be empty")
-        return redirect(url_for('signup'))
-
-    #  Check if user is educated
-    if '@' not in email:
-        flash("Please enter a valid email address")
-        return redirect(url_for('signup'))
-
-    # Check if email already exists
-    if Users.query.filter_by(email=email).first():
-        flash("Email already registered")
-        return redirect(url_for('signup'))
-
-    # checking if username is already taken
-    user = Users.query.filter_by(username=username).first()
-    if user:
-        flash("Username already exists")
-        return redirect(url_for('signup'))
-    
-    if not username.strip() or not password.strip():
-        flash("Username or password cannot be empty")
-        return redirect(url_for('signup'))
-
-    if len(password) < 8:
-        flash("Password must be at least 8 characters long")
-        return redirect(url_for('signup'))
-    
-    if cnf_password != password:
-        flash("Password does not match")
-        return redirect(url_for('signup'))
-    
-    # Create new user with email, username and password
-    new_user = Users(
-        email=email.strip().lower(),
-        username=username.strip(),
-        password=password  # This will trigger the password.setter
-    )
-    
-    db.session.add(new_user)
-    db.session.commit()
-    
-    flash("User successfully created")
-    return redirect(url_for('login'))
     
 
 @app.route('/logout')
