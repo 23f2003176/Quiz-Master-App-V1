@@ -25,7 +25,7 @@ from models import (
     UserAchievement,
     Badge,
     UserBadge,
-    ActivityFeed
+    ActivityFeed,
 )
 
 from db_instance import db
@@ -43,7 +43,19 @@ def auth_required(func):
         return func(*args, **kwargs)
     return decorated_function
 
-
+def admin_required(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Login to continue")
+            return redirect(url_for('login'))
+        
+        user = Users.query.get(session['user_id'])
+        if user.role != 'admin':
+            flash("You do not have permission to view this page")
+            return redirect(url_for('index'))
+        return func(*args, **kwargs)
+    return decorated_function
 
 
 #-------------
@@ -169,10 +181,91 @@ def index():
 
 @app.route('/admin_dashboard')
 @auth_required 
+@admin_required
 def admin_dashboard():
-    user = Users.query.get(session['user_id'])
-    return render_template('admin_dashboard.html', user=user)
+    student_count = Users.query.filter_by(role='student').count()
+    subject_count = Category.query.count()
+    quiz_count = Quiz.query.count()
+    total_questions = Questions.query.count()  # Renamed to avoid conflict
+    quizzes = Quiz.query.order_by(Quiz.created_at.desc()).limit(5).all()
+    quiz_question_counts = [Questions.query.filter_by(quiz_id=quiz.id).count() for quiz in quizzes]  # Renamed
 
+    return render_template('admin_dashboard.html',
+                         student_count=student_count,
+                         subject_count=subject_count,
+                         quiz_count=quiz_count,
+                         question_count=total_questions,  # For stats card
+                         quiz_question_counts=quiz_question_counts,  # For quiz table
+                         quizzes=quizzes)
+
+#----------------
+# Create Quiz
+#----------------
+@app.route('/create_quiz', methods=['GET','POST'])
+@auth_required 
+@admin_required
+def create_quiz():
+    if request.method == 'POST':
+        try:
+            # Get form data
+            subject_name = request.form.get('name')
+            
+            # Get existing category or create new one
+            category = Category.query.filter_by(name=subject_name).first()
+            if not category:
+                category = Category(name=subject_name)
+                db.session.add(category)
+                db.session.flush()
+
+            # Create new quiz
+            quiz = Quiz(
+                title=request.form.get('title'),
+                description=request.form.get('description'),
+                creator_id=session['user_id'],
+                time_limit=int(request.form.get('time_limit')) if request.form.get('time_limit') else None,
+                passing_score=int(request.form.get('passing_score')) if request.form.get('passing_score') else None,
+                start_time=datetime.strptime(request.form.get('start_time'), '%Y-%m-%dT%H:%M') if request.form.get('start_time') else None,
+                end_time=datetime.strptime(request.form.get('end_time'), '%Y-%m-%dT%H:%M') if request.form.get('end_time') else None,
+                max_attempts=int(request.form.get('max_attempts')) if request.form.get('max_attempts') else 1,
+                is_public=request.form.get('is_public') == 'on'
+            )
+            
+            # Add category to quiz
+            quiz.categories.append(category)
+            
+            db.session.add(quiz)
+            db.session.commit()
+
+            flash('Quiz created successfully!', 'success')
+            return redirect(url_for('add_questions', quiz_id=quiz.id))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('Error creating quiz: ' + str(e), 'danger')
+            return redirect(url_for('create_quiz'))
+
+    categories = Category.query.all()
+    return render_template('create_quiz.html', categories=categories)
+
+#----------------
+# Add Questions
+#----------------
+@app.route('/add_questions/<int:quiz_id>', methods=['GET','POST'])
+@auth_required
+@admin_required
+def add_questions(quiz_id):
+    return render_template('questions.html', quiz_id=quiz_id)
+
+#----------------
+# edit Quiz
+#----------------
+@app.route('/edit_quiz/<int:quiz_id>',methods = ['GET', 'POST'])
+@auth_required
+@admin_required
+def edit_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+
+    return render_template('edit_quiz.html', quiz=quiz)
 
 
 

@@ -96,6 +96,7 @@ class Quiz(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))  # Direct foreign key
     time_limit = db.Column(db.Integer)  # in minutes
     passing_score = db.Column(db.Integer)
     is_public = db.Column(db.Boolean, default=False)
@@ -107,6 +108,8 @@ class Quiz(db.Model):
     shuffle_questions = db.Column(db.Boolean, default=False)
     
     # Relationships
+    categories = db.relationship('Category', secondary='quiz_categories',backref=db.backref('quizzes', lazy=True)) 
+                               
     questions = db.relationship('Questions', backref='quiz', cascade="all, delete-orphan", lazy=True)
 
 # Questions Model
@@ -204,7 +207,7 @@ class Category(db.Model):
     __tablename__ = 'categories'
     
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.Enum('General Knowledge', 'Science', 'History', 'Geography', 'Mathematics', 'Computer Science', 'Literature', 'Music', 'Movies', 'Sports', 'Art', 'Language', 'Miscellaneous', name='categories', native_enum=False), nullable=False)
     description = db.Column(db.Text)
     parent_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
     

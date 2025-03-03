@@ -1,0 +1,226 @@
+{% extends 'layout.html' %}
+
+{% block title %}Create Quiz - Kuizu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="col-lg-8 mx-auto">
+        <div class="card border-0 shadow-lg bg-dark text-light quiz-card">
+            <div class="card-header border-0 bg-dark p-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-pencil-square fs-3 me-2 text-primary"></i>
+                    <h2 class="card-title mb-0">Create New Quiz</h2>
+                </div>
+                <p class="text-muted mb-0">Fill in the details below to create your quiz</p>
+            </div>
+
+            <div class="card-body p-4">
+                <form action="{{ url_for('create_quiz') }}" method="POST" class="needs-validation">
+                    <div class="row g-4">
+                        <!-- Subject Selection -->
+                        <div class="col-md-6">
+                            <label for="subject" class="form-label fw-bold text-light-emphasis required">Subject Name</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-book text-primary"></i>
+                                </span>
+                                <select class="form-select bg-dark text-light" id="subject" name="name" required>
+                                    <option value="" selected disabled>Select Subject</option>
+                                    {% for subject in [
+                                        'General Knowledge',
+                                        'Science',
+                                        'History',
+                                        'Geography',
+                                        'Mathematics',
+                                        'Computer Science',
+                                        'Literature',
+                                        'Music',
+                                        'Movies',
+                                        'Sports',
+                                        'Art',
+                                        'Language',
+                                        'Miscellaneous'
+                                    ] %}
+                                    <option value="{{subject}}">{{ subject }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Title -->
+                        <div class="col-md-6">
+                            <label for="title" class="form-label fw-bold text-light-emphasis required">Quiz Title</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-type text-primary"></i>
+                                </span>
+                                <input type="text" class="form-control bg-dark text-light" id="title" name="title" required>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="col-12">
+                            <label for="description" class="form-label fw-bold text-light-emphasis">Description</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-text-paragraph text-primary"></i>
+                                </span>
+                                <textarea class="form-control bg-dark text-light" id="description" name="description" rows="3" 
+                                        placeholder="Enter quiz description..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Quiz Settings Row -->
+                        <div class="col-md-4">
+                            <label for="time_limit" class="form-label fw-bold text-light-emphasis ">Time Limit (minutes)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-clock text-primary"></i>
+                                </span>
+                                <input type="number" class="form-control bg-dark text-light" id="time_limit" 
+                                    name="time_limit">
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="passing_score" class="form-label fw-bold text-light-emphasis ">Passing Score (%)</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-percent text-primary"></i>
+                                </span>
+                                <input type="number" class="form-control bg-dark text-light" id="passing_score" 
+                                    name="passing_score" >
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="difficulty_level" class="form-label fw-bold text-light-emphasis ">Difficulty Level</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-bar-chart text-primary"></i>
+                                </span>
+                                <select class="form-select bg-dark text-light" id="difficulty_level" name="difficulty_level" required>
+                                    <option value="" selected disabled>Select Difficulty</option>
+                                    <option value="easy">Easy</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="hard">Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Date Settings Row -->
+                        <div class="col-md-6">
+                            <label for="start_date" class="form-label fw-bold text-light-emphasis">Start Date</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-calendar-event text-primary"></i>
+                                </span>
+                                <input type="datetime-local" class="form-control bg-dark text-light" 
+                                id="start_time" name="start_time" 
+                                value="{{ start_time.strftime('%Y-%m-%dT%H:%M') if start_time else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="end_date" class="form-label fw-bold text-light-emphasis">End Date</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-dark border-secondary">
+                                    <i class="bi bi-calendar-check text-primary"></i>
+                                </span>
+                                <input type="datetime-local" class="form-control bg-dark text-light" 
+                                id="start_time" name="end_time" 
+                                value="{{ start_time.strftime('%Y-%m-%dT%H:%M') if start_time else '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Quiz Options -->
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-light-emphasis mb-3">Quiz Options</label>
+                            <div class="d-flex gap-4">
+                                <div class="form-check form-switch">
+                                    <input type="checkbox" class="form-check-input" id="is_public" name="is_public">
+                                    <label class="form-check-label" for="is_public">Make quiz public</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="col-12 d-flex justify-content-between align-items-center mt-5 pt-4 border-top border-secondary">
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light btn-lg">
+                                <i class="bi bi-arrow-left me-2"></i>Back
+                            </a>
+                            <div class="d-flex gap-3">
+                                <button type="submit" class="btn btn-primary btn-lg px-4">
+                                    <i class="bi bi-save me-2"></i>Create Quiz
+                                </button>
+                                <button type="button" class="btn btn-success btn-lg px-4" disabled>
+                                    <i class="bi bi-plus-circle me-2"></i>Add Questions
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.quiz-card {
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(10px);
+}
+
+.quiz-card:hover {
+    transform: translateY(-5px);
+    transition: transform 0.3s ease;
+}
+
+.form-control.bg-dark,
+.form-select.bg-dark,
+.input-group-text {
+    border-color: rgba(255, 255, 255, 0.1);
+    font-size: 1rem;
+}
+
+.input-group-text {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-right: none;
+}
+
+.form-control.bg-dark:focus,
+.form-select.bg-dark:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.form-label {
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.required:after {
+    content: " *";
+    color: #dc3545;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+</style>
+{% endblock %}

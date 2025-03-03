@@ -46,3 +46,99 @@ form{
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
+
+
+
+/* For admin_dasboard */
+:root {
+    --primary-gradient: linear-gradient(135deg, #375abd, #4e73df);
+    --success-gradient: linear-gradient(135deg, #1cc88a, #13855c);
+    --warning-gradient: linear-gradient(135deg, #f6c23e, #dda20a);
+    --info-gradient: linear-gradient(135deg, #36b9cc, #258391);
+}
+
+.dashboard-header {
+    background: rgba(33, 37, 41, 0.95);
+    border-radius: 0.75rem;
+    padding: 2.5rem 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+}
+
+.stat-card {
+    background: rgba(33, 37, 41, 0.95) !important;
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.stat-card:hover {
+    transform: translateY(-7px);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* ...existing styles... */
+
+.stat-label {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.875rem;
+    letter-spacing: 0.1em;
+}
+
+@media (prefers-color-scheme: dark) {
+    .stat-card {
+        background: rgba(33, 37, 41, 0.95) !important;
+    }
+}
+
+.feature-icon {
+    width: 4rem;
+    height: 4rem;
+    font-size: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    position: relative;
+    margin-bottom: 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+
+.feature-icon i {
+    z-index: 1;
+}
+
+.feature-icon::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    padding: 2px;
+    background: var(--primary-gradient);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+}
+
+.success-card .feature-icon::before {
+    background: var(--success-gradient);
+}
+
+.warning-card .feature-icon::before {
+    background: var(--warning-gradient);
+}
+
+.info-card .feature-icon::before {
+    background: var(--info-gradient);
+}
+
+.feature-icon:hover {
+    transform: scale(1.1);
+}
