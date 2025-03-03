@@ -1,11 +1,97 @@
 {% extends 'layout.html' %}
 
-{% block title %}
-    home - Kuizu
-{% endblock %}
+{% block title %}Home - Kuizu{% endblock %}
 
 {% block content %}
-    <h1>Welcome to Kuizu!</h1>
-    <p>Test your knowledge with our quizzes.</p>
-    <p>Hello {{user.full_name}}</p>
+<div class="container py-5">
+    <!-- Welcome Section -->
+    <div class="row mb-5">
+        <div class="col-lg-8 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3">Welcome to <span class="welcome">Kuizu!</span></h1>
+            <p class="lead text-muted mb-4">Hello, {{user.full_name}}! Ready to challenge yourself?</p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 gap-3">
+                    <i class="bi bi-play-circle"></i> Start Quiz
+                </a>
+                {% if user.role == 'admin' %}
+                <a href="{{ url_for('create_quiz') }}" class="btn btn-outline-secondary btn-lg px-4">
+                    <i class="bi bi-plus-circle"></i> Create Quiz
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-5">
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-primary bg-gradient text-white rounded-circle mb-3">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <h5 class="card-title">Quick Learning</h5>
+                    <p class="card-text">Test your knowledge with our carefully crafted quizzes.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-success bg-gradient text-white rounded-circle mb-3">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h5 class="card-title">Track Progress</h5>
+                    <p class="card-text">Monitor your performance and see your improvement over time.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="feature-icon bg-info bg-gradient text-white rounded-circle mb-3">
+                        <i class="bi bi-trophy"></i>
+                    </div>
+                    <h5 class="card-title">Earn Achievements</h5>
+                    <p class="card-text">Complete quizzes and earn badges for your accomplishments.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h3 class="fw-bold text-primary">{{user.quiz_attempts|length}}</h3>
+                            <p class="text-muted mb-0">Quizzes Taken</p>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="fw-bold text-success">{{user.groups_created|length}}</h3>
+                            <p class="text-muted mb-0">Groups</p>
+                        </div>
+                        <div class="col-4">
+                            <h3 class="fw-bold text-info">0</h3>
+                            <p class="text-muted mb-0">Achievements</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.feature-icon {
+    width: 4rem;
+    height: 4rem;
+    font-size: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
 {% endblock %}

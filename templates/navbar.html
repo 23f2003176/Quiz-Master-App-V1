@@ -1,0 +1,142 @@
+<nav class="navbar navbar-expand-lg navbar-glass">
+  <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+          <span class="brand-text">Kuizu</span>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+          {% if user %}
+          <!-- Logged in menu -->
+          <ul class="navbar-nav me-auto ">
+              <li class="nav-item px-3">
+                  <a href="{{url_for('index')}}" class="nav-link">
+                      <i class="bi bi-house-door"></i> Home
+                  </a>
+              </li>
+              <li class="nav-item px-3">
+                  <a href="{{url_for('dashboard')}}" class="nav-link">
+                      <i class="bi bi-speedometer2"></i> Dashboard
+                  </a>
+              </li>
+              <!-- Search Form -->
+              <li class="nav-item px-3">
+                  <form class="d-flex search-form">
+                      <div class="input-group">
+                          <input class="form-control search-input" type="search" placeholder="Search quizzes...">
+                          <button class="btn btn-outline-primary" type="submit">
+                              <i class="bi bi-search"></i>
+                          </button>
+                      </div>
+                  </form>
+              </li>
+          </ul>
+          <!-- User Menu -->
+          <ul class="navbar-nav ms-auto">
+              <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                      <i class="bi bi-person-circle"></i> {{user.username}}
+                  </a>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                          <a class="dropdown-item" href="{{url_for('profile')}}">
+                              <i class="bi bi-person"></i> Profile
+                          </a>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                          <a class="dropdown-item text-danger" href="{{url_for('logout')}}">
+                              <i class="bi bi-box-arrow-right"></i> Logout
+                          </a>
+                      </li>
+                  </ul>
+              </li>
+          </ul>
+          {% else %}
+          <!-- Guest menu -->
+          <ul class="navbar-nav ms-auto">
+              <li class="nav-item">
+                  <a class="nav-link" href="{{url_for('login')}}">
+                      <i class="bi bi-box-arrow-in-right"></i> Login
+                  </a>
+              </li>
+              <li class="nav-item">
+                  <a class="nav-link btn btn-primary text-white ms-2" href="{{url_for('signup')}}">
+                      <i class="bi bi-person-plus"></i> Sign Up
+                  </a>
+              </li>
+          </ul>
+          {% endif %}
+      </div>
+  </div>
+</nav>
+
+<style>
+.navbar-glass {
+  background: rgba(33, 37, 41, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.navbar-logo {
+  height: 40px;
+  width: auto;
+}
+
+.brand-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: linear-gradient(45deg, #29c4ff, #2a5298);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.search-form {
+  min-width: 300px;
+}
+
+.search-input {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #29c4ff;
+  box-shadow: none;
+  color: white;
+}
+
+.nav-link {
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+  color: #29c4ff;
+}
+
+.dropdown-menu {
+  background: rgba(33, 37, 41, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-item {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dropdown-item:hover {
+  background: rgba(41, 196, 255, 0.1);
+  color: #29c4ff;
+}
+
+.dropdown-divider {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+</style>

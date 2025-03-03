@@ -3,75 +3,156 @@
 {% block title %}Profile - Kuizu{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Profile</h1>
-    
-    <div class="card">
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
-                <!-- Read-only fields -->
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <input type="text" class="form-control" value="{{ user.username }}" disabled>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" value="{{ user.email }}" disabled>
-                </div>
+<div class="container py-5">
 
-                <div class="mb-3">
-                    <label class="form-label">Role</label>
-                    <input type="text" class="form-control" value="{{ user.role }}" disabled>
-                </div>
-
-                <!-- Always updatable fields -->
-                <div class="mb-3">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" class="form-control" name="full_name" 
-                           value="{{ user.full_name }}" placeholder="Enter your full name">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Qualification</label>
-                    <input type="text" class="form-control" name="qualification" 
-                           value="{{ user.qualification }}" placeholder="Enter your qualification">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Date of Birth</label>
-                    <input type="date" class="form-control" name="dob" 
-                           value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}">
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Profile Image</label>
-                    {% if user.profile_image %}
-                    <div class="mb-2">
-                        <img src="{{ url_for('static', filename='uploads/' + user.profile_image) }}" 
-                             class="img-thumbnail" style="max-width: 200px">
+    <h1 class="mb-4"><i class="bi bi-person-circle me-2"></i> Profile</h1>
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 mb-4">
+            <div class="card shadow">
+                <div class="card-body d-flex flex-column justify-content-between" style="min-height: 200px;">
+                    <div>
+                        <h5 class="card-title mb-3"><i class="bi bi-compass me-2"></i> Navigation</h5>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{url_for('dashboard')}}">
+                                    <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{url_for('index')}}">
+                                    <i class="bi bi-house me-2"></i> Home
+                                </a>
+                            </li>
+                        </ul>
                     </div>
-                    {% endif %}
-                    <input type="file" class="form-control" name="profile_image" accept="image/*">
+                    <div>
+                        <hr>
+                        <ul class="nav flex-column">
+                            <li class="nav-item">
+                                <a class="nav-link text-danger" href="{{url_for('logout')}}">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Read-only information -->
-                <div class="mb-3">
-                    <label class="form-label">Last Login</label>
-                    <input type="text" class="form-control" 
-                           value="{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else 'Never' }}" 
-                           disabled>
+        <!-- Main Content -->
+        <div class="col-md-9">
+            <div class="card shadow">
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('update_profile') }}" enctype="multipart/form-data">
+                        <!-- Profile Image Section -->
+                        <div class="text-center mb-4">
+                            {% if user.profile_image %}
+                                <img src="{{ url_for('static', filename='uploads/' + user.profile_image) }}"
+                                     class="rounded-circle mb-3"
+                                     style="width: 150px; height: 150px; object-fit: cover;"
+                                     alt="Profile Picture">
+                            {% else %}
+                                <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3"
+                                     style="width: 150px; height: 150px;">
+                                    <i class="bi bi-person-fill text-white" style="font-size: 4rem;"></i>
+                                </div>
+                            {% endif %}
+                            <div class="mb-3">
+                                <label for="profile_image" class="form-label">
+                                    <i class="bi bi-image me-1"></i> Change Profile Picture
+                                </label>
+                                <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
+                                <small class="text-muted">Upload a new image to update your profile picture.</small>
+                            </div>
+                        </div>
+
+                        <!-- Read-only Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bi bi-person me-1"></i> Username</label>
+                                <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bi bi-envelope me-1"></i> Email</label>
+                                <input type="email" class="form-control" value="{{ user.email }}" disabled>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label"><i class="bi bi-shield-lock me-1"></i> Role</label>
+                                <input type="text" class="form-control" value="{{ user.role }}" disabled>
+                            </div>
+                        </div>
+
+                        <!-- Editable Fields -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="bi bi-info-circle me-1"></i> Full Name</label>
+                                <input type="text" class="form-control" name="full_name"
+                                       value="{{ user.full_name }}" placeholder="Enter your full name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="bi bi-mortarboard me-1"></i> Qualification</label>
+                                <input type="text" class="form-control" name="qualification"
+                                       value="{{ user.qualification }}" placeholder="Enter your qualification">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label"><i class="bi bi-calendar me-1"></i> Date of Birth</label>
+                            <input type="date" class="form-control" name="dob"
+                                   value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}">
+                        </div>
+
+                        <div class="card mb-4 shadow">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-key me-1"></i> Change Password</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="bi bi-lock me-1"></i> Current Password *</label>
+                                        <input type="password" class="form-control" name="current_password"
+                                               placeholder="Enter current password" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="bi bi-lock-fill me-1"></i> New Password *</label>
+                                        <input type="password" class="form-control" name="new_password"
+                                               placeholder="Enter new password" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="bi bi-lock-check me-1"></i> Confirm Password *</label>
+                                        <input type="password" class="form-control" name="confirm_password"
+                                               placeholder="Confirm new password" required>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="bi bi-clock me-1"></i> Last Login</label>
+                                <input type="text" class="form-control"
+                                       value="{{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') if user.last_login else 'Never' }}"
+                                       disabled>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"><i class="bi bi-calendar-check me-1"></i> Account Created</label>
+                                <input type="text" class="form-control"
+                                       value="{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}"
+                                       disabled>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Account Created</label>
-                    <input type="text" class="form-control" 
-                           value="{{ user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}" 
-                           disabled>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Update Profile</button>
-            </form>
+            </div>
         </div>
     </div>
 </div>

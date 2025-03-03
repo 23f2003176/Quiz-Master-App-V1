@@ -1,0 +1,96 @@
+{% extends 'layout.html' %}
+
+{% block title %}Student Dashboard - Kuizu{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-2 bg-dark text-white p-3 sidebar">
+            <h4>Kuizu</h4>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a href="#" class="nav-link text-white">Dashboard</a></li>
+                <li class="nav-item"><a href="#" class="nav-link text-white">User Profile</a></li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <input type="text" class="form-control w-25" placeholder="Search...">
+                <span class="badge bg-primary">Top Performer</span>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card bg-dark text-white p-3">
+                        <h5>Performance Trend</h5>
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-dark text-white p-3">
+                        <h5>Score Slabs</h5>
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card bg-dark text-white p-3">
+                        <h5>Recent Quizzes</h5>
+                        <ul>
+                            <li>Quiz 1 - 85%</li>
+                            <li>Quiz 2 - 92%</li>
+                            <li>Quiz 3 - 78%</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-dark text-white p-3">
+                        <h5>Leaderboard</h5>
+                        <ul>
+                            <li>Alice - 95%</li>
+                            <li>Bob - 90%</li>
+                            <li>Charlie - 88%</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx1 = document.getElementById('trendChart').getContext('2d');
+    new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4'],
+            datasets: [{
+                label: 'Performance',
+                data: [80, 85, 90, 95],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                fill: false
+            }]
+        }
+    });
+
+    const ctx2 = document.getElementById('barChart').getContext('2d');
+    new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: ['0-50', '51-70', '71-85', '86-100'],
+            datasets: [{
+                label: 'Students',
+                data: [5, 10, 20, 15],
+                backgroundColor: ['red', 'orange', 'yellow', 'green']
+            }]
+        }
+    });
+</script>
+{% endblock %}

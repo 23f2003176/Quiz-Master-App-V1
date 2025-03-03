@@ -1,34 +1,72 @@
 {% extends 'layout.html' %}
 
-{% block title %}
-login - Kuizu
-{% endblock %}
+{% block title %}Login - Kuizu{% endblock %}
 
 {% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-6 col-lg-5">
 
-<div class="form-container">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <h1 class="h3 mb-3 fw-bold">Welcome Back!</h1>
+                        <p class="text-muted">Please sign in to continue</p>
+                    </div>
 
-    <form method="post" class="login_form" action="{{ url_for('login_post') }}">
+                    <form method="post" action="{{ url_for('login_post') }}">
+                        <div class="form-floating mb-3">
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder="Username"
+                                   required>
+                            <label for="username">Username</label>
+                        </div>
 
-        <div class="mt-4">
-            <h1>Login</h1>
+                        <div class="form-floating mb-4">
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder="Password"
+                                   required>
+                            <label for="password">Password</label>
+                        </div>
 
-            <div class="mb-3">
-                <label for="username" class="form-label">Username *</label>
-                <input type="text" name="username" id="username" class="form-control mt-1" required>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                            </button>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <p class="text-muted">
+                                Don't have an account? 
+                                <a href="{{ url_for('signup') }}" class="text-decoration-none">Sign up</a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <div class="mb-3">
-                <label for="exampleInputPassword1" class="form-label">Password
-                    <input type="password" class="form-control" id="password" name="password" required>
-                </label>
-            </div>
-            
-            <button type="submit" class="btn btn-success">Login</button>
         </div>
-
-    </form>
-
+    </div>
 </div>
 
+<style>
+.min-vh-100 {
+    min-height: 100vh;
+}
+.card {
+    border-radius: 1rem;
+}
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: #6c757d;
+}
+.btn-primary {
+    padding: 0.8rem 1rem;
+}
+</style>
 {% endblock %}

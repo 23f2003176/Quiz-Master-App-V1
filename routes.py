@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session
 import os
+from functools import wraps
 from datetime import datetime
 from werkzeug.utils import secure_filename
 from models import (
@@ -33,15 +34,25 @@ from app import app  # Import the app instance from app.py
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
+def auth_required(func):
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash("Login to continue")
+            return redirect(url_for('login'))
+        return func(*args, **kwargs)
+    return decorated_function
+
 #-------------
 # Home Page
 #-------------
 
 @app.route('/')
+@auth_required 
 def index():
-    if 'user_id' not in session:
-        flash("Login to continue")
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash("Login to continue")    not required as alredy handed by the auth_required
+    #     return redirect(url_for('login'))
     return render_template('index.html', user = Users.query.get(session['user_id']))
 
 
@@ -51,31 +62,56 @@ def index():
 
 
 @app.route('/profile')
+@auth_required 
 def profile():
-    if 'user_id' not in session:
-        flash("Login to continue")
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     flash("Login to continue")
+    #     return redirect(url_for('login'))
     user = Users.query.get(session['user_id'])
     return render_template('profile.html', user=user)
 
+
 @app.route('/profile/update', methods=['GET','POST'])
+@auth_required 
 def update_profile():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
+    # if 'user_id' not in session:
+    #     return redirect(url_for('login'))
     
     user = Users.query.get(session['user_id'])
     
-    # Update full name if provided
+
+    # Update password
+    current_password = request.form.get('current_password')
+    new_password = request.form.get('new_password')
+    confirm_password = request.form.get('confirm_password')
+    
+    if current_password and new_password and confirm_password:
+        if not user.check_password(current_password):
+            flash('Current password is incorrect', 'danger')
+            return redirect(url_for('profile'))
+            
+        if new_password != confirm_password:
+            flash('New passwords do not match', 'danger')
+            return redirect(url_for('profile'))
+            
+        if len(new_password) < 8:
+            flash('Password must be at least 8 characters long', 'danger')
+            return redirect(url_for('profile'))
+            
+        user.password = new_password
+    
+
+    # Update full name 
     full_name = request.form.get('full_name', '').strip()
     if full_name:
         user.full_name = full_name
     
-    # Update qualification if provided
+    # Update qualification 
     qualification = request.form.get('qualification', '').strip()
     if qualification:
         user.qualification = qualification
     
-    # Update DOB if provided
+    # Update DOB 
     dob = request.form.get('dob')
     if dob:
         try:
@@ -102,6 +138,24 @@ def update_profile():
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+
+#-------------
+# Dashboard
+#-------------
+
+
+@app.route('/dashboard')
+@auth_required 
+def dashboard():
+    # if 'user_id' not in session:
+    #     flash("Login to continue")
+    #     return redirect(url_for('login'))
+    user = Users.query.get(session['user_id'])
+    return render_template('dashboard.html', user=user)
+
 
 
 
@@ -153,7 +207,7 @@ def signup_post():
     email = request.form.get('email')
     username = request.form.get('username')
     password = request.form.get('password')
-
+    cnf_password = request.form.get('confirm_password')
 
     # Check if email is actullay an email
     if not email or not email.strip():
@@ -184,6 +238,10 @@ def signup_post():
         flash("Password must be at least 8 characters long")
         return redirect(url_for('signup'))
     
+    if cnf_password != password:
+        flash("Password does not match")
+        return redirect(url_for('signup'))
+    
     # Create new user with email, username and password
     new_user = Users(
         email=email.strip().lower(),
@@ -199,6 +257,7 @@ def signup_post():
     
 
 @app.route('/logout')
+@auth_required 
 def logout():
     session.pop('user_id', None)
     return redirect(url_for('login'))
