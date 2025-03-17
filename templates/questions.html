@@ -2,5 +2,121 @@
 {% block title %}Questions - Kuizu{% endblock %}
 
 {% block content %}
-    <h1 class=" ">Add questions </h1>
-{% endblock%}
+<div class="container py-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-question-circle-fill text-primary me-2"></i>Add Questions</h2>
+            <p class="text-muted mb-0">{{ quiz.title }}</p>
+        </div>
+    </div>
+
+    <!--  number of questions  -->
+    <form action="{{ url_for('add_questions', quiz_id=quiz.id) }}" method="GET" class="mb-4">
+        <div class="input-group input-group-lg">
+            <span class="input-group-text bg-dark border-secondary">
+                <i class="bi bi-hash text-primary"></i>
+            </span>
+            <input type="number" name="num_questions" class="form-control bg-dark text-light border-secondary" 
+                   value="{{ num_questions|default(1) }}" min="1" max="50">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2-circle me-2"></i>Set Questions
+            </button>
+        </div>
+    </form>
+
+    <!-- Form for questions  -->
+    <form action="{{ url_for('add_questions', quiz_id=quiz.id) }}" method="POST">
+        {% for i in range(num_questions|default(1)) %}
+        <div class="card bg-dark border-secondary mb-4 shadow-sm">
+            <div class="card-header border-secondary bg-dark-subtle py-3">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-square-text text-primary me-2"></i>Question {{ i + 1 }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-light-emphasis">Question Text</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-dark border-secondary">
+                            <i class="bi bi-pencil-square text-primary"></i>
+                        </span>
+                        <input type="text" class="form-control bg-dark text-light border-secondary" 
+                               name="questions[{{ i }}][text]" required 
+                               placeholder="Enter your question here...">
+                    </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-light-emphasis">Option 1</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="bi bi-1-circle text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   name="questions[{{ i }}][option1]" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-light-emphasis">Option 2</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="bi bi-2-circle text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   name="questions[{{ i }}][option2]" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-light-emphasis">Option 3</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="bi bi-3-circle text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   name="questions[{{ i }}][option3]" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold text-light-emphasis">Option 4</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="bi bi-4-circle text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   name="questions[{{ i }}][option4]" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="form-label fw-semibold text-light-emphasis">Correct Answer</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-dark border-secondary">
+                            <i class="bi bi-check-circle text-primary"></i>
+                        </span>
+                        <select class="form-select bg-dark text-light border-secondary" 
+                                name="questions[{{ i }}][correct_option]" required>
+                            <option value="">Select correct option</option>
+                            <option value="1">Option 1</option>
+                            <option value="2">Option 2</option>
+                            <option value="3">Option 3</option>
+                            <option value="4">Option 4</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="d-flex justify-content-end gap-2">
+            <a href="{{ url_for('edit_quiz', quiz_id=quiz.id) }}" 
+               class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-x-circle me-2"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-save me-2"></i>Save Questions
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -35,8 +35,8 @@ form{
 }
 
 .navbar-logo {
-    height: 100%; /* Make the logo fill the height of the navbar */
-    max-height: 80px; /* Ensure the logo does not exceed the navbar height */
+    height: 100%; 
+    max-height: 80px; 
     width: auto; /* Maintain the aspect ratio of the logo */
 }
 

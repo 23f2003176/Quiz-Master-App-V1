@@ -301,11 +301,50 @@ def delete_chapter(quiz_id,chapter_id):
 #----------------
 # Add Questions
 #----------------
-@app.route('/add_questions/<int:quiz_id>', methods=['GET','POST'])
+@app.route('/add_questions/<int:quiz_id>', methods=['GET', 'POST'])
 @auth_required
 @admin_required
 def add_questions(quiz_id):
-    return render_template('questions.html', quiz_id=quiz_id)
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    if request.method == 'GET':
+        num_questions = request.args.get('num_questions', 1, type=int)
+        return render_template('questions.html', quiz=quiz, num_questions=num_questions)
+    
+    if request.method == 'POST':
+        try:
+            form_data = request.form
+            num_questions = len([k for k in form_data.keys() if k.endswith('[text]')])
+            
+            for i in range(num_questions):
+                question = Questions(
+                    quiz_id=quiz_id,
+                    question_text=form_data[f'questions[{i}][text]'],
+                    question_type='multiple_choice'
+                )
+                db.session.add(question)
+                db.session.flush()  # Get question ID
+                
+                # Add options
+                for j in range(1, 5):
+                    option = form_data[f'questions[{i}][option{j}]']
+                    is_correct = form_data[f'questions[{i}][correct_option]'] == str(j)
+                    answer = Answers(
+                        question_id=question.question_id,
+                        answer_text=option,
+                        is_correct=is_correct
+                    )
+                    db.session.add(answer)
+            
+            db.session.commit()
+            flash('Questions added successfully!', 'success')
+            return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding questions: ' + str(e), 'danger')
+    
+    return render_template('questions.html', quiz=quiz, num_questions=1)
 
 
 
@@ -336,7 +375,6 @@ def delete_quiz(quiz_id):
 #-------------
 # Dashboard
 #-------------
-
 
 @app.route('/dashboard')
 @auth_required 

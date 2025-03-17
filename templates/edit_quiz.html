@@ -79,7 +79,7 @@
                         {% endif %}
                     </div>
                     <div class="btn-group">
-                        <a href="#" type="submit" class="btn btn-success">
+                        <a href="{{url_for('add_questions',quiz_id = quiz.id, chapter_id = chapter.id)}}" type="submit" class="btn btn-success">
                             <i class="bi bi-plus-circle me-2"></i>Questions
                         </a>
                         <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteChapter{{ chapter.id }}">
