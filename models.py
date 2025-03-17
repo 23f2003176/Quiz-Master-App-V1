@@ -112,6 +112,28 @@ class Quiz(db.Model):
                                
     questions = db.relationship('Questions', backref='quiz', cascade="all, delete-orphan", lazy=True)
 
+
+
+# Chapter Model
+class Chapter(db.Model):
+    __tablename__ = 'chapters'
+    
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id', ondelete='CASCADE'))
+    order = db.Column(db.Integer)  # For chapter ordering
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    Chapter_image = db.Column(db.String(255))
+    
+    
+    # Relationship with Quiz
+    quiz = db.relationship('Quiz', backref=db.backref('chapters', lazy=True, order_by='Chapter.order'))
+    # Relationship with Questions
+    questions = db.relationship('Questions', backref='chapter', lazy=True)
+
+
+
 # Questions Model
 class Questions(db.Model):
     __tablename__ = 'questions'
@@ -132,6 +154,9 @@ class Questions(db.Model):
     # Relationships
     answers = db.relationship('Answers', backref='question', cascade="all, delete-orphan", lazy=True)
     user_responses = db.relationship('UserResponse', backref='question', lazy=True)
+    chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.id', ondelete='SET NULL'), nullable=True)
+
+
 
 # Answers Model
 class Answers(db.Model):

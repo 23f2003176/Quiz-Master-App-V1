@@ -3,30 +3,7 @@ import os
 from functools import wraps
 from datetime import datetime
 from werkzeug.utils import secure_filename
-from models import (
-    Users,
-    Quiz,
-    Questions,
-    Answers,
-    QuizAttempts,
-    UserResponse,
-    UserSessions,
-    PasswordResetToken,
-    Category,
-    QuizCategory,
-    UserGroup,
-    GroupMember,
-    QuizAssignment,
-    Feedback,
-    UserStatistic,
-    Leaderboard,
-    LeaderboardEntry,
-    Achievement,
-    UserAchievement,
-    Badge,
-    UserBadge,
-    ActivityFeed,
-)
+from models import *
 
 from db_instance import db
 from app import app  # Import the app instance from app.py
@@ -237,7 +214,7 @@ def create_quiz():
             db.session.commit()
 
             flash('Quiz created successfully!', 'success')
-            return redirect(url_for('add_questions', quiz_id=quiz.id))
+            return redirect(url_for('edit_quiz', quiz_id=quiz.id))
 
         except Exception as e:
             db.session.rollback()
@@ -246,6 +223,80 @@ def create_quiz():
 
     categories = Category.query.all()
     return render_template('create_quiz.html', categories=categories)
+
+
+
+#----------------
+# edit Quiz
+#----------------
+@app.route('/edit_quiz/<int:quiz_id>', methods=['GET', 'POST'])
+@auth_required
+@admin_required
+def edit_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    if request.method == 'POST':
+        try:
+            chapter_title = request.form.get('title')
+            chapter_description = request.form.get('description')
+            
+            
+            chapter_image = None
+            if 'chapter_image' in request.files:
+                file = request.files['chapter_image']
+                if file and file.filename != '':
+                    if file.filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
+                        filename = secure_filename(file.filename)
+                        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                        chapter_image = filename
+                    else:
+                        flash('Invalid file type. Allowed types are: png, jpg, jpeg, gif', 'danger')
+                        return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+
+
+            # Create new chapter
+            new_chapter = Chapter(
+                title=chapter_title,
+                description=chapter_description,
+                quiz_id=quiz_id,
+                Chapter_image=chapter_image
+            )
+            
+            db.session.add(new_chapter)
+            db.session.commit()
+            
+            flash('Chapter added successfully!', 'success')
+            return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding chapter: ' + str(e), 'danger')
+            return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+    
+    return render_template('edit_quiz.html', quiz=quiz)
+    
+
+
+#----------------
+# delete chapters
+#----------------
+@app.route('/delete_chapter/<int:quiz_id>/<int:chapter_id>', methods=['POST'])
+@auth_required
+@admin_required
+def delete_chapter(quiz_id,chapter_id):
+    try:
+        chapter = Chapter.query.get_or_404(chapter_id)
+        db.session.delete(chapter)
+        db.session.commit()
+        flash('Chapter deleted successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting chapter: ' + str(e), 'danger')
+    
+    return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+
+
+
+
 
 #----------------
 # Add Questions
@@ -256,16 +307,29 @@ def create_quiz():
 def add_questions(quiz_id):
     return render_template('questions.html', quiz_id=quiz_id)
 
+
+
 #----------------
-# edit Quiz
+# delete Quiz
 #----------------
-@app.route('/edit_quiz/<int:quiz_id>',methods = ['GET', 'POST'])
+@app.route('/delete_quiz/<int:quiz_id>', methods=['POST'])
 @auth_required
 @admin_required
-def edit_quiz(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+def delete_quiz(quiz_id):
+    try:
+        quiz = Quiz.query.get_or_404(quiz_id)
+        
+        db.session.delete(quiz)
+        db.session.commit()
+        flash('Quiz deleted successfully!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting quiz: ' + str(e), 'danger')
+    
+    return redirect(url_for('admin_dashboard'))
 
-    return render_template('edit_quiz.html', quiz=quiz)
+
 
 
 

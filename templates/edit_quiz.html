@@ -1,0 +1,120 @@
+{% extends 'layout.html' %}
+
+{% block title %}Edit Quiz - Kuizu{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Quiz Header  -->
+    <div class="text-center mb-5">
+        <h2 class="display-5 fw-bold mb-2">{{quiz.title}}</h2>
+        <span class="badge bg-primary px-3 py-2">{{quiz.categories[0].name}}</span>
+    </div>
+
+    <!-- Add Chapter  -->
+    <div class="card bg-dark border-secondary shadow-sm">
+        <div class="card-header border-secondary bg-dark-subtle py-3">
+            <h4 class="mb-0"><i class="bi bi-plus-circle-dotted me-2"></i>Add New Chapter</h4>
+        </div>
+        <div class="card-body p-4">
+            <form action="{{url_for('edit_quiz', quiz_id = quiz.id)}}" method="POST" enctype="multipart/form-data">
+                <!-- Chapter name  -->
+                <div class="mb-4">
+                    <label for="title" class="form-label fw-semibold text-light-emphasis required">Chapter Name</label>
+                    <div class="d-flex gap-3 align-items-start">
+                        <div class="input-group input-group-lg flex-grow-1">
+                            <span class="input-group-text bg-dark border-secondary">
+                                <i class="bi bi-type text-primary"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark text-light border-secondary" 
+                                   id="title" name="title" required 
+                                   placeholder="Enter chapter name...">
+                        </div>
+                        <div class="d-flex align-items-center w-50 ">
+                            <input type="file" class="d-none" id="chapter_image" name="chapter_image" accept="image/*">
+                            <button type="button" class="btn btn-outline-primary m-2" 
+                                    onclick="document.getElementById('chapter_image').click()">
+                                <i class="bi bi-image me-2"></i>Add Media
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chapter description  -->
+                <div class="mb-4">
+                    <label for="description" class="form-label fw-semibold text-light-emphasis">Description</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text bg-dark border-secondary">
+                            <i class="bi bi-text-paragraph text-primary"></i>
+                        </span>
+                        <textarea class="form-control bg-dark text-light border-secondary" 
+                                id="description" name="description" rows="4" 
+                                placeholder="Enter chapter description..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Submit button -->
+                <div class="d-flex justify-content-end ">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-plus-circle me-2"></i>Create Chapter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Display existing chapters if any -->
+    {% if quiz.chapters %}
+    <div class="card bg-dark border-secondary shadow-sm mt-4">
+        <div class="card-header border-secondary bg-dark-subtle py-3">
+            <h4 class="mb-0"><i class="bi bi-list-ul me-2"></i>Chapters</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="list-group">
+                {% for chapter in quiz.chapters %}
+                <div class="list-group-item bg-dark border-secondary d-flex justify-content-between align-items-center p-3 mb-2">
+                    <div>
+                        <h5 class="mb-1">{{ chapter.title }}</h5>
+                        {% if chapter.description %}
+                        <p class="text-muted small mb-0">{{ chapter.description[:100] }}...</p>
+                        {% endif %}
+                    </div>
+                    <div class="btn-group">
+                        <a href="#" type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i>Questions
+                        </a>
+                        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteChapter{{ chapter.id }}">
+                            <i class="bi bi-trash me-2"></i>Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% for chapter in quiz.chapters %}
+<div class="modal fade" id="deleteChapter{{ chapter.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Delete Chapter</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "{{ chapter.title }}"?</p>
+                <p class="text-danger"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('delete_chapter', quiz_id=quiz.id, chapter_id=chapter.id) }}" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
