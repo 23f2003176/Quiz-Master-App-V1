@@ -7,12 +7,12 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="mb-1"><i class="bi bi-question-circle-fill text-primary me-2"></i>Add Questions</h2>
-            <p class="text-muted mb-0">{{ quiz.title }}</p>
+            <p class="text-muted mb-0">{{ quiz.title }} -  Chapter: {{ chapter.title }}</p>
         </div>
     </div>
 
     <!--  number of questions  -->
-    <form action="{{ url_for('add_questions', quiz_id=quiz.id) }}" method="GET" class="mb-4">
+    <form action="{{ url_for('add_questions', quiz_id=quiz.id, chapter_id=chapter.id) }}" method="POST">
         <div class="input-group input-group-lg">
             <span class="input-group-text bg-dark border-secondary">
                 <i class="bi bi-hash text-primary"></i>
@@ -26,7 +26,7 @@
     </form>
 
     <!-- Form for questions  -->
-    <form action="{{ url_for('add_questions', quiz_id=quiz.id) }}" method="POST">
+    <form action="{{ url_for('add_questions', quiz_id=quiz.id, chapter_id=chapter.id) }}" method="POST" enctype="multipart/form-data">
         {% for i in range(num_questions|default(1)) %}
         <div class="card bg-dark border-secondary mb-4 shadow-sm">
             <div class="card-header border-secondary bg-dark-subtle py-3">
@@ -41,9 +41,20 @@
                         <span class="input-group-text bg-dark border-secondary">
                             <i class="bi bi-pencil-square text-primary"></i>
                         </span>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" 
-                               name="questions[{{ i }}][text]" required 
-                               placeholder="Enter your question here...">
+                        <input type="text" class="form-control bg-dark text-light border-secondary" name="questions[{{ i }}][text]" required placeholder="Enter your question here...">
+                        
+                        <!-- Take Image -->
+                        <div class="d-flex align-items-center">
+                            <input type="file" class="d-none" 
+                                   id="question_image_{{ i }}" 
+                                   name="questions[{{ i }}][question_image]" 
+                                   accept="image/*">
+                            <button type="button" class="btn btn-outline-primary m-2" 
+                                    onclick="document.getElementById('question_image_{{ i }}').click()">
+                                <i class="bi bi-image me-2"></i>Add Media
+                            </button>
+                        </div>
+
                     </div>
                 </div>
                 <div class="row g-4">

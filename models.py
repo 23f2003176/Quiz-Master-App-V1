@@ -142,8 +142,7 @@ class Questions(db.Model):
     quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id', ondelete='CASCADE'))
     question_text = db.Column(db.Text, nullable=False)
     # Use native_enum=False so that SQLite stores simple string values.
-    question_type = db.Column(db.Enum('multiple_choice', 'true_false', 'short_answer', 'matching',
-                                        name='question_types', native_enum=False),
+    question_type = db.Column(db.Enum('multiple_choice',name='question_types', native_enum=False),
                               nullable=False)
     points = db.Column(db.Integer, default=1)
     difficulty_level = db.Column(db.Enum('easy', 'medium', 'hard', name='difficulty_levels', native_enum=False),

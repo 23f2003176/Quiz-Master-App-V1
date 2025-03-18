@@ -227,6 +227,15 @@ def create_quiz():
 
 
 #----------------
+# view Quiz
+#----------------
+@app.route('/view_quiz/<int:quiz_id>')
+@auth_required
+def view_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    return render_template('view_quiz.html', quiz=quiz)
+
+#----------------
 # edit Quiz
 #----------------
 @app.route('/edit_quiz/<int:quiz_id>', methods=['GET', 'POST'])
@@ -234,6 +243,7 @@ def create_quiz():
 @admin_required
 def edit_quiz(quiz_id):
     quiz = Quiz.query.get_or_404(quiz_id)
+    chapter_id = request.args.get('chapter_id', type=int)
     if request.method == 'POST':
         try:
             chapter_title = request.form.get('title')
@@ -282,16 +292,35 @@ def edit_quiz(quiz_id):
 @app.route('/delete_chapter/<int:quiz_id>/<int:chapter_id>', methods=['POST'])
 @auth_required
 @admin_required
-def delete_chapter(quiz_id,chapter_id):
-    try:
-        chapter = Chapter.query.get_or_404(chapter_id)
-        db.session.delete(chapter)
-        db.session.commit()
-        flash('Chapter deleted successfully!', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash('Error deleting chapter: ' + str(e), 'danger')
-    
+def delete_chapter(quiz_id, chapter_id):
+    chapter = Chapter.query.get_or_404(chapter_id)
+
+    # Verify chapter belongs to quiz
+    if chapter.quiz_id != quiz_id:
+        flash('Chapter does not belong to this quiz', 'danger')
+        return redirect(url_for('edit_quiz', quiz_id=quiz_id))
+
+    # Manual deletion of related records to ensure they're removed
+    questions = Questions.query.filter_by(chapter_id=chapter_id).all()
+
+    for question in questions:
+        # Delete all answers for this question
+        Answers.query.filter_by(question_id=question.question_id).delete()
+
+    # Delete all questions for this chapter
+    Questions.query.filter_by(chapter_id=chapter_id).delete()
+
+    # Delete chapter image if it exists
+    if chapter.Chapter_image:
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], chapter.Chapter_image)
+        if os.path.exists(image_path):
+            os.remove(image_path)
+
+    # Delete the chapter
+    db.session.delete(chapter)
+    db.session.commit()
+
+    flash('Chapter deleted successfully!', 'success')
     return redirect(url_for('edit_quiz', quiz_id=quiz_id))
 
 
@@ -301,29 +330,45 @@ def delete_chapter(quiz_id,chapter_id):
 #----------------
 # Add Questions
 #----------------
-@app.route('/add_questions/<int:quiz_id>', methods=['GET', 'POST'])
+@app.route('/add_questions/<int:quiz_id>/<int:chapter_id>', methods=['GET', 'POST'])
 @auth_required
 @admin_required
-def add_questions(quiz_id):
+def add_questions(quiz_id, chapter_id):
     quiz = Quiz.query.get_or_404(quiz_id)
-    
-    if request.method == 'GET':
-        num_questions = request.args.get('num_questions', 1, type=int)
-        return render_template('questions.html', quiz=quiz, num_questions=num_questions)
+    chapter = Chapter.query.get_or_404(chapter_id)
     
     if request.method == 'POST':
+        # Check if this is a "set number of questions" request
+        if 'num_questions' in request.form and not any(key.endswith('[text]') for key in request.form.keys()):
+            num_questions = int(request.form.get('num_questions', 1))
+            return render_template('questions.html', quiz=quiz, chapter=chapter, num_questions=num_questions)
+        
         try:
             form_data = request.form
+            files = request.files
             num_questions = len([k for k in form_data.keys() if k.endswith('[text]')])
             
             for i in range(num_questions):
+                # Handle media upload
+                media_url = None
+                if f'questions[{i}][question_image]' in files:
+                    file = files[f'questions[{i}][question_image]']
+                    if file and file.filename != '':
+                        if file.filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
+                            filename = secure_filename(file.filename)
+                            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                            media_url = filename
+                
+                # Create question using media_url field
                 question = Questions(
                     quiz_id=quiz_id,
+                    chapter_id=chapter_id,
                     question_text=form_data[f'questions[{i}][text]'],
+                    media_url=media_url,
                     question_type='multiple_choice'
                 )
                 db.session.add(question)
-                db.session.flush()  # Get question ID
+                db.session.flush()
                 
                 # Add options
                 for j in range(1, 5):
@@ -343,8 +388,51 @@ def add_questions(quiz_id):
         except Exception as e:
             db.session.rollback()
             flash('Error adding questions: ' + str(e), 'danger')
+            return redirect(url_for('edit_quiz', quiz_id=quiz_id))
     
-    return render_template('questions.html', quiz=quiz, num_questions=1)
+    # Important: Pass chapter to the template
+    return render_template('questions.html', quiz=quiz, chapter=chapter, num_questions=1)
+
+
+#----------------
+# delete Question
+#----------------
+@app.route('/delete_question/<int:quiz_id>/<int:question_id>', methods=['POST'])
+@auth_required
+@admin_required
+def delete_question(quiz_id, question_id):
+    # Get the question and verify it exists
+    question = Questions.query.get_or_404(question_id)
+    
+    
+    if question.quiz_id != quiz_id:
+        flash('Question does not belong to this quiz', 'danger')
+        return redirect(url_for('view_quiz', quiz_id=quiz_id))
+    
+    # Remember the chapter ID for redirection
+    chapter_id = question.chapter_id
+    
+    
+    if question.media_url:
+        try:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], question.media_url)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        except Exception as e:
+            # some bug here
+            print(f"Error deleting question image: {e}")
+    
+    
+    Answers.query.filter_by(question_id=question_id).delete()
+    
+    # Delete the question
+    db.session.delete(question)
+    db.session.commit()
+    
+    flash('Question deleted successfully!', 'success')
+    return redirect(url_for('view_quiz', quiz_id=quiz_id))
+
+
 
 
 
