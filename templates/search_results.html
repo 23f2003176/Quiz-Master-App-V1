@@ -1,0 +1,210 @@
+{% extends 'layout.html' %}
+
+{% block title %}Search Results - Kuizu{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Search Results Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Search Results</li>
+                </ol>
+            </nav>
+            <h1 class="fw-bold">Search Results</h1>
+            <p class="text-muted">Found {{ result_count }} results for: <span class="fw-bold">"{{ query }}"</span></p>
+        </div>
+    </div>
+    
+    <!-- No Results -->
+    {% if result_count == 0 %}
+    <div class="card border-0 shadow-sm p-4 mb-5">
+        <div class="text-center py-4">
+            <i class="bi bi-search" style="font-size: 3rem; color: #ddd;"></i>
+            <p class="text-muted mt-3 mb-0">No quizzes found matching "{{ query }}".</p>
+            <p class="small text-muted">Try different keywords or explore our available quizzes.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Browse All Quizzes</a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ongoing Quizzes -->
+    {% if ongoing_quizzes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold h4"><i class="bi bi-hourglass-split text-danger me-2"></i>Ongoing Quizzes</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+                {% for quiz in ongoing_quizzes %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm quiz-card">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
+                                <span class="badge bg-danger">LIVE</span>
+                            </div>
+                            <p class="card-text text-muted">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter display -->
+                            {% if quiz_chapters[quiz.id] %}
+                            <div class="mb-3">
+                                <h6 class="mb-2 text-primary">Chapters:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for chapter in quiz_chapters[quiz.id] %}
+                                    <span class="badge bg-light text-dark p-2">
+                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-clock me-1"></i> {{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}
+                                    </span>
+                                    <span class="badge bg-light text-dark ms-2">
+                                        <i class="bi bi-award me-1"></i> {{ quiz.passing_score or 'N/A' }}{% if quiz.passing_score %}%{% endif %}
+                                    </span>
+                                </div>
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-primary">
+                                    <i class="bi bi-play-fill me-1"></i> Start Quiz
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Upcoming Quizzes -->
+    {% if upcoming_quizzes %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold h4"><i class="bi bi-calendar-event text-success me-2"></i>Upcoming Quizzes</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+                {% for quiz in upcoming_quizzes %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm quiz-card">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
+                                <span class="badge bg-warning text-dark">UPCOMING</span>
+                            </div>
+                            <p class="card-text text-muted">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter display -->
+                            {% if quiz_chapters[quiz.id] %}
+                            <div class="mb-3">
+                                <h6 class="mb-2 text-primary">Chapters:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for chapter in quiz_chapters[quiz.id] %}
+                                    <span class="badge bg-light text-dark p-2">
+                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-calendar-date me-1"></i> {{ quiz.start_time.strftime('%d %b, %Y') }}
+                                    </span>
+                                    <span class="badge bg-light text-dark ms-2">
+                                        <i class="bi bi-clock me-1"></i> {{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}
+                                    </span>
+                                </div>
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-outline-primary">
+                                    <i class="bi bi-info-circle me-1"></i> Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Past Quizzes -->
+    {% if past_quizzes %}
+    <div class="row">
+        <div class="col-12">
+            <h2 class="fw-bold h4"><i class="bi bi-clock-history text-secondary me-2"></i>Past Quizzes</h2>
+            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+                {% for quiz in past_quizzes %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm quiz-card">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between mb-3">
+                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
+                                <span class="badge bg-secondary">ENDED</span>
+                            </div>
+                            <p class="card-text text-muted">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter display -->
+                            {% if quiz_chapters[quiz.id] %}
+                            <div class="mb-3">
+                                <h6 class="mb-2 text-primary">Chapters:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for chapter in quiz_chapters[quiz.id] %}
+                                    <span class="badge bg-light text-dark p-2">
+                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-light text-dark">
+                                        <i class="bi bi-calendar-x me-1"></i> {{ quiz.end_time.strftime('%d %b, %Y') }}
+                                    </span>
+                                </div>
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">
+                                    <i class="bi bi-eye me-1"></i> View Results
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Custom styles for search results page */
+.quiz-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.quiz-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
+}
+
+.badge {
+    font-weight: normal;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    padding: 0.35em 0.65em;
+}
+</style>
+{% endblock %}

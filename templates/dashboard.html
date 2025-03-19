@@ -6,91 +6,260 @@
 <div class="container-fluid mt-4">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-2 bg-dark text-white p-3 sidebar">
-            <h4>Kuizu</h4>
-            <ul class="nav flex-column">
-                <li class="nav-item"><a href="#" class="nav-link text-white">Dashboard</a></li>
-                <li class="nav-item"><a href="#" class="nav-link text-white">User Profile</a></li>
+        <div class="col-md-2 bg-dark text-white p-3 sidebar vh-100">
+            <h3 class="fw-bold mb-4 text-center text-primary">Kuizu</h3>
+            <div class="text-center mb-4">
+                <img src="https://ui-avatars.com/api/?name=Student+User&background=random" class="rounded-circle" width="80" height="80" alt="Profile">
+                <p class="mt-2 mb-0 fw-bold">Student Name</p>
+                <small class="text-muted">student@example.com</small>
+            </div>
+            <hr class="bg-secondary">
+            <ul class="nav flex-column mt-4">
+                <li class="nav-item mb-3">
+                    <a href="#" class="nav-link text-white active">
+                        <i class="bi bi-grid-fill me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="#" class="nav-link text-white">
+                        <i class="bi bi-person-fill me-2"></i> Profile
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="#" class="nav-link text-white">
+                        <i class="bi bi-journal-check me-2"></i> My Quizzes
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="#" class="nav-link text-white">
+                        <i class="bi bi-trophy-fill me-2"></i> Achievements
+                    </a>
+                </li>
+                <li class="nav-item mb-3">
+                    <a href="#" class="nav-link text-white">
+                        <i class="bi bi-gear-fill me-2"></i> Settings
+                    </a>
+                </li>
             </ul>
+            <div class="mt-auto" style="position: absolute; bottom: 20px; width: 80%;">
+                <a href="#" class="btn btn-outline-danger btn-sm w-100">
+                    <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                </a>
+            </div>
         </div>
 
         <!-- Main Content --> 
-        <div class="col-md-10">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <input type="text" class="form-control w-25" placeholder="Search...">
-                <span class="badge bg-primary">Top Performer</span>
-            </div>
+        <div class="col-md-10 bg-light">
+            <div class="p-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="fw-bold">Welcome back, Student!</h2>
+                    <div class="d-flex align-items-center">
+                        <div class="input-group me-3">
+                            <input type="text" class="form-control" placeholder="Search...">
+                            <button class="btn btn-primary" type="button"><i class="bi bi-search"></i></button>
+                        </div>
+                        <span class="badge bg-success p-2">Top Performer <i class="bi bi-star-fill ms-1"></i></span>
+                    </div>
+                </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card bg-dark text-white p-3">
-                        <h5>Performance Trend</h5>
-                        <canvas id="trendChart"></canvas>
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="bg-primary p-3 rounded-circle me-3">
+                                    <i class="bi bi-journal-check text-white" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-0 fw-bold">27</h3>
+                                    <p class="text-muted mb-0">Quizzes Completed</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="bg-success p-3 rounded-circle me-3">
+                                    <i class="bi bi-trophy text-white" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-0 fw-bold">87%</h3>
+                                    <p class="text-muted mb-0">Average Score</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="bg-warning p-3 rounded-circle me-3">
+                                    <i class="bi bi-clock-history text-white" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h3 class="mb-0 fw-bold">3</h3>
+                                    <p class="text-muted mb-0">Pending Quizzes</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card bg-dark text-white p-3">
-                        <h5>Score Slabs</h5>
-                        <canvas id="barChart"></canvas>
+
+                <!-- Ongoing Quizzes -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 fw-bold"><i class="bi bi-lightning-charge-fill text-warning me-2"></i> Ongoing Quizzes</h5>
+                            <a href="#" class="btn btn-sm btn-outline-primary">View All</a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if ongoing_quizzes %}
+                                {% for quiz in ongoing_quizzes %}
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card h-100 border-0 shadow-sm">
+                                            <div class="card-header bg-primary text-white">
+                                                <h6 class="mb-0">{{ quiz.title }}</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="card-text">{{ quiz.description }}</p>
+                                                <div class="d-flex justify-content-between mb-2">
+                                                    <span class="badge bg-light text-dark"><i class="bi bi-clock me-1"></i> {{ quiz.duration }} min</span>
+                                                    <span class="badge bg-light text-dark"><i class="bi bi-calendar-event me-1"></i> Due: {{ quiz.end_date }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="card-footer bg-white border-0">
+                                                <a href="{{ url_for('quiz_details', quiz_id=quiz.id) }}" class="btn btn-primary w-100">Take Quiz</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center py-4">
+                                    <div class="py-5">
+                                        <i class="bi bi-journal-x" style="font-size: 3rem; color: #ddd;"></i>
+                                        <p class="text-muted mt-3">No ongoing quizzes at the moment.</p>
+                                        <p class="text-muted">Check back later or contact your instructor.</p>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Recent Performance -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 fw-bold"><i class="bi bi-graph-up text-success me-2"></i> Recent Performance</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <h6 class="mb-0">Python Basics Quiz</h6>
+                                            <small class="text-muted">Completed on Mar 15, 2025</small>
+                                        </div>
+                                        <span class="badge bg-success rounded-pill p-2">92%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <h6 class="mb-0">JavaScript Fundamentals</h6>
+                                            <small class="text-muted">Completed on Mar 10, 2025</small>
+                                        </div>
+                                        <span class="badge bg-primary rounded-pill p-2">85%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <h6 class="mb-0">Database Concepts</h6>
+                                            <small class="text-muted">Completed on Mar 5, 2025</small>
+                                        </div>
+                                        <span class="badge bg-warning text-dark rounded-pill p-2">78%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                        <div>
+                                            <h6 class="mb-0">Web Security</h6>
+                                            <small class="text-muted">Completed on Feb 28, 2025</small>
+                                        </div>
+                                        <span class="badge bg-danger rounded-pill p-2">65%</span>
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-sm btn-outline-secondary w-100 mt-3">View All History</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaderboard -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white">
+                                <h5 class="mb-0 fw-bold"><i class="bi bi-trophy text-warning me-2"></i> Leaderboard</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex align-items-center px-0">
+                                        <div class="me-3 position-relative">
+                                            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-warning">
+                                                1
+                                            </span>
+                                            <img src="https://ui-avatars.com/api/?name=Alice&background=random" class="rounded-circle" width="40" height="40" alt="Alice">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0">Alice Johnson</h6>
+                                            <small class="text-muted">42 quizzes completed</small>
+                                        </div>
+                                        <span class="fw-bold">95%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-center px-0">
+                                        <div class="me-3 position-relative">
+                                            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-secondary">
+                                                2
+                                            </span>
+                                            <img src="https://ui-avatars.com/api/?name=Bob&background=random" class="rounded-circle" width="40" height="40" alt="Bob">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0">Bob Smith</h6>
+                                            <small class="text-muted">38 quizzes completed</small>
+                                        </div>
+                                        <span class="fw-bold">90%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-center px-0">
+                                        <div class="me-3 position-relative">
+                                            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-secondary">
+                                                3
+                                            </span>
+                                            <img src="https://ui-avatars.com/api/?name=Charlie&background=random" class="rounded-circle" width="40" height="40" alt="Charlie">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0">Charlie Davis</h6>
+                                            <small class="text-muted">36 quizzes completed</small>
+                                        </div>
+                                        <span class="fw-bold">88%</span>
+                                    </li>
+                                    <li class="list-group-item d-flex align-items-center px-0">
+                                        <div class="me-3 position-relative">
+                                            <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-secondary">
+                                                4
+                                            </span>
+                                            <img src="https://ui-avatars.com/api/?name=You&background=primary" class="rounded-circle" width="40" height="40" alt="You">
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-0">You</h6>
+                                            <small class="text-muted">27 quizzes completed</small>
+                                        </div>
+                                        <span class="fw-bold">87%</span>
+                                    </li>
+                                </ul>
+                                <a href="#" class="btn btn-sm btn-outline-secondary w-100 mt-3">Full Leaderboard</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card bg-dark text-white p-3">
-                        <h5>Recent Quizzes</h5>
-                        <ul>
-                            <li>Quiz 1 - 85%</li>
-                            <li>Quiz 2 - 92%</li>
-                            <li>Quiz 3 - 78%</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card bg-dark text-white p-3">
-                        <h5>Leaderboard</h5>
-                        <ul>
-                            <li>Alice - 95%</li>
-                            <li>Bob - 90%</li>
-                            <li>Charlie - 88%</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            
         </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx1 = document.getElementById('trendChart').getContext('2d');
-    new Chart(ctx1, {
-        type: 'line',
-        data: {
-            labels: ['Test 1', 'Test 2', 'Test 3', 'Test 4'],
-            datasets: [{
-                label: 'Performance',
-                data: [80, 85, 90, 95],
-                borderColor: 'rgba(75, 192, 192, 1)',
-                fill: false
-            }]
-        }
-    });
-
-    const ctx2 = document.getElementById('barChart').getContext('2d');
-    new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: ['0-50', '51-70', '71-85', '86-100'],
-            datasets: [{
-                label: 'Students',
-                data: [5, 10, 20, 15],
-                backgroundColor: ['red', 'orange', 'yellow', 'green']
-            }]
-        }
-    });
-</script>
 {% endblock %}

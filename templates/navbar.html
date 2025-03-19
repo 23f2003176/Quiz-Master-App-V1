@@ -22,15 +22,16 @@
               </li>
               <!-- Search Form -->
               <li class="nav-item px-3">
-                  <form class="d-flex search-form">
-                      <div class="input-group">
-                          <input class="form-control search-input" type="search" placeholder="Search quizzes...">
-                          <button class="btn btn-outline-primary" type="submit">
-                              <i class="bi bi-search"></i>
-                          </button>
-                      </div>
-                  </form>
-              </li>
+                <form class="d-flex search-form" action="{{ url_for('search_quizzes') }}" method="GET">
+                    <div class="input-group">
+                        <input class="form-control search-input" type="search" name="query" placeholder="Search quizzes..." 
+                               value="{{ request.args.get('query', '') }}">
+                        <button class="btn btn-outline-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </li>
           </ul>
           <!-- User Menu -->
           <ul class="navbar-nav ms-auto">
