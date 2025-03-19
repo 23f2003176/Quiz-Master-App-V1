@@ -140,16 +140,94 @@ def login_post():
 @app.route('/')
 @auth_required 
 def index():
-    # if 'user_id' not in session:
-    #     flash("Login to continue")    not required as alredy handed by the auth_required
-    #     return redirect(url_for('login'))
+    ongoing_quizzes = Quiz.query.filter(Quiz.start_time <= datetime.now(), Quiz.end_time >= datetime.now()).all()
+    upcoming_quizzes = Quiz.query.filter(Quiz.start_time > datetime.now()).all()
 
+    ongoing_quizzes_chapters = {}
+    for quiz in ongoing_quizzes:
+        chapters = Chapter.query.filter_by(quiz_id=quiz.id).all()
+        ongoing_quizzes_chapters[quiz.id] = chapters
+
+    upcoming_quizzes_chapters = {}
+    for quiz in upcoming_quizzes:
+        chapters = Chapter.query.filter_by(quiz_id=quiz.id).all()
+        upcoming_quizzes_chapters[quiz.id] = chapters
 
     # Redirect to admin dashboard if user is admin
     user = Users.query.get(session['user_id'])
     if user.role == 'admin':
         return redirect(url_for('admin_dashboard'))
-    return render_template('index.html', user = user)
+        
+    return render_template('index.html', 
+                          user=user,
+                          ongoing_quizzes=ongoing_quizzes, 
+                          upcoming_quizzes=upcoming_quizzes,
+                          ongoing_quizzes_chapters=ongoing_quizzes_chapters,
+                          upcoming_quizzes_chapters=upcoming_quizzes_chapters)
+
+
+
+#----------------
+# Search Quizzes
+#----------------
+@app.route('/search')
+@auth_required
+def search_quizzes():
+    query = request.args.get('query', '').strip()
+    if not query:
+        return redirect(url_for('index'))
+        
+    # Search in quiz titles and descriptions
+    quizzes = Quiz.query.filter(
+        db.or_(
+            Quiz.title.ilike(f'%{query}%'),
+            Quiz.description.ilike(f'%{query}%')
+        )
+    ).all()
+    
+    # Also search in chapter titles
+    chapter_matches = Chapter.query.filter(Chapter.title.ilike(f'%{query}%')).all()
+    
+    # Get quizzes from chapter matches and add them to results if not already included
+    chapter_quiz_ids = set(chapter.quiz_id for chapter in chapter_matches)
+    quiz_ids = set(quiz.id for quiz in quizzes)
+    additional_quiz_ids = chapter_quiz_ids - quiz_ids
+    
+    additional_quizzes = Quiz.query.filter(Quiz.id.in_(additional_quiz_ids)).all() if additional_quiz_ids else []
+    
+    all_quizzes = quizzes + additional_quizzes
+    
+    # Get chapters for each quiz
+    quiz_chapters = {}
+    for quiz in all_quizzes:
+        chapters = Chapter.query.filter_by(quiz_id=quiz.id).all()
+        quiz_chapters[quiz.id] = chapters
+
+    # Organize quizzes into categories (ongoing, upcoming, past)
+    now = datetime.now()
+    ongoing_quizzes = []
+    upcoming_quizzes = []
+    past_quizzes = []
+    
+    for quiz in all_quizzes:
+        if quiz.start_time <= now and quiz.end_time >= now:
+            ongoing_quizzes.append(quiz)
+        elif quiz.start_time > now:
+            upcoming_quizzes.append(quiz)
+        else:
+            past_quizzes.append(quiz)
+    
+    user = Users.query.get(session['user_id'])
+    return render_template('search_results.html', 
+                          user=user,
+                          ongoing_quizzes=ongoing_quizzes,
+                          upcoming_quizzes=upcoming_quizzes,
+                          past_quizzes=past_quizzes,
+                          quiz_chapters=quiz_chapters,
+                          query=query,
+                          result_count=len(all_quizzes))
+
+
 
 
 #----------------
@@ -492,25 +570,38 @@ def profile():
     return render_template('profile.html', user=user)
 
 
-@app.route('/profile/update', methods=['GET','POST'])
+
+#-------------
+# Profile Update
+#-------------
+@app.route('/profile/update', methods=['GET', 'POST'])
 @auth_required 
 def update_profile():
-    # if 'user_id' not in session:
-    #     return redirect(url_for('login'))
-    
+    if request.method != 'POST':
+        return redirect(url_for('profile'))
+        
     user = Users.query.get(session['user_id'])
+    password_update = False
+    profile_update = False
     
-
-    # Update password
-    current_password = request.form.get('current_password')
-    new_password = request.form.get('new_password')
-    confirm_password = request.form.get('confirm_password')
-    
-    if current_password and new_password and confirm_password:
+    # Check if this is a password update request
+    if 'update_password' in request.form:
+        password_update = True
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        # Validate password fields
+        if not current_password or not new_password or not confirm_password:
+            flash('All password fields are required for password update', 'warning')
+            return redirect(url_for('profile'))
+            
+        # Verify current password
         if not user.check_password(current_password):
             flash('Current password is incorrect', 'danger')
             return redirect(url_for('profile'))
             
+        # Validate new password
         if new_password != confirm_password:
             flash('New passwords do not match', 'danger')
             return redirect(url_for('profile'))
@@ -520,42 +611,58 @@ def update_profile():
             return redirect(url_for('profile'))
             
         user.password = new_password
+        flash('Password updated successfully', 'success')
     
-
-    # Update full name 
-    full_name = request.form.get('full_name', '').strip()
-    if full_name:
-        user.full_name = full_name
-    
-    # Update qualification 
-    qualification = request.form.get('qualification', '').strip()
-    if qualification:
-        user.qualification = qualification
-    
-    # Update DOB 
-    dob = request.form.get('dob')
-    if dob:
-        try:
-            user.dob = datetime.strptime(dob, '%Y-%m-%d')
-        except ValueError:
-            flash("Invalid date format")
-            return redirect(url_for('profile'))
-    
-    # Handle profile image upload
-    if 'profile_image' in request.files:
-        file = request.files['profile_image']
-        if file and file.filename != '':
-            if file.filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                user.profile_image = filename
-            else:
-                flash("Invalid file type. Allowed types are: png, jpg, jpeg, gif")
+    # Process profile updates (separate from password)
+    else:
+        # Update basic profile information
+        full_name = request.form.get('full_name', '').strip()
+        if full_name:
+            user.full_name = full_name
+            profile_update = True
+        
+        # Update qualification 
+        qualification = request.form.get('qualification', '').strip()
+        if qualification:
+            user.qualification = qualification
+            profile_update = True
+        
+        # Update DOB 
+        dob = request.form.get('dob')
+        if dob:
+            try:
+                user.dob = datetime.strptime(dob, '%Y-%m-%d')
+                profile_update = True
+            except ValueError:
+                flash("Invalid date format", 'danger')
                 return redirect(url_for('profile'))
+        
+        # Handle profile image upload
+        if 'profile_image' in request.files:
+            file = request.files['profile_image']
+            if file and file.filename != '':
+                if file.filename.split('.')[-1].lower() in ALLOWED_EXTENSIONS:
+                    filename = secure_filename(file.filename)
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    user.profile_image = filename
+                    flash("Profile image updated successfully", 'success')
+                    profile_update = True
+                else:
+                    flash("Invalid file type. Allowed types are: png, jpg, jpeg, gif", 'danger')
+                    return redirect(url_for('profile'))
 
+        # Show success message for profile updates
+        if profile_update:
+            flash("Profile updated successfully!", 'success')
+    
+    # Save changes to database
     db.session.commit()
-    flash("Profile updated successfully!")
     return redirect(url_for('profile'))
+
+
+
+
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
