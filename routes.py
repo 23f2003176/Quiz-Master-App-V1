@@ -1,8 +1,7 @@
-from flask import render_template, request, redirect, url_for, flash, session
+from flask import render_template, request, redirect, url_for, flash, session, jsonify
 import os
 from datetime import datetime, timedelta
 from functools import wraps
-from datetime import datetime
 from werkzeug.utils import secure_filename
 from models import *
 
@@ -1224,6 +1223,314 @@ def update_profile():
     db.session.commit()
     return redirect(url_for('profile'))
 
+
+
+
+
+
+#----------------
+# API Endpoints
+#----------------
+
+# Helper function to convert SQLAlchemy model instances to dictionaries
+def object_to_dict(obj, exclude_keys=None):
+    if exclude_keys is None:
+        exclude_keys = []
+    
+    result = {}
+    for key in obj.__table__.columns.keys():
+        if key not in exclude_keys:
+            result[key] = getattr(obj, key)
+            # Convert datetime objects to ISO format strings
+            if isinstance(result[key], datetime):
+                result[key] = result[key].isoformat()
+    return result
+
+# API - Get all categories
+@app.route('/api/categories', methods=['GET'])
+def api_get_categories():
+    try:
+        categories = Category.query.all()
+        result = [object_to_dict(cat) for cat in categories]
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get specific category
+@app.route('/api/categories/<int:category_id>', methods=['GET'])
+def api_get_category(category_id):
+    try:
+        category = Category.query.get_or_404(category_id)
+        result = object_to_dict(category)
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get all quizzes
+@app.route('/api/quizzes', methods=['GET'])
+def api_get_quizzes():
+    try:
+        quizzes = Quiz.query.all()
+        result = []
+        
+        for quiz in quizzes:
+            quiz_dict = object_to_dict(quiz)
+            # Add creator information
+            creator = Users.query.get(quiz.creator_id)
+            quiz_dict['creator'] = creator.username if creator else None
+            # Add category information
+            categories = [{'id': cat.id, 'name': cat.name} for cat in quiz.categories]
+            quiz_dict['categories'] = categories
+            result.append(quiz_dict)
+            
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get specific quiz
+@app.route('/api/quizzes/<int:quiz_id>', methods=['GET'])
+def api_get_quiz(quiz_id):
+    try:
+        quiz = Quiz.query.get_or_404(quiz_id)
+        result = object_to_dict(quiz)
+        
+        # Add creator information
+        creator = Users.query.get(quiz.creator_id)
+        result['creator'] = creator.username if creator else None
+        
+        # Add category information
+        result['categories'] = [{'id': cat.id, 'name': cat.name} for cat in quiz.categories]
+        
+        # Add chapters count
+        result['chapters_count'] = Chapter.query.filter_by(quiz_id=quiz_id).count()
+        
+        # Add questions count
+        result['questions_count'] = Questions.query.filter_by(quiz_id=quiz_id).count()
+        
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get quizzes by category
+@app.route('/api/categories/<int:category_id>/quizzes', methods=['GET'])
+def api_get_quizzes_by_category(category_id):
+    try:
+        # Verify category exists
+        category = Category.query.get_or_404(category_id)
+        
+        # Get quiz IDs for this category
+        quiz_ids = db.session.query(QuizCategory.quiz_id).filter_by(category_id=category_id).all()
+        quiz_ids = [q[0] for q in quiz_ids]
+        
+        # Get quizzes
+        quizzes = Quiz.query.filter(Quiz.id.in_(quiz_ids)).all()
+        result = [object_to_dict(quiz) for quiz in quizzes]
+        
+        return jsonify({
+            'status': 'success', 
+            'data': result, 
+            'category': {'id': category.id, 'name': category.name}
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get all chapters
+@app.route('/api/chapters', methods=['GET'])
+def api_get_chapters():
+    try:
+        chapters = Chapter.query.all()
+        result = []
+        
+        for chapter in chapters:
+            chapter_dict = object_to_dict(chapter)
+            # Add quiz title
+            quiz = Quiz.query.get(chapter.quiz_id)
+            chapter_dict['quiz_title'] = quiz.title if quiz else None
+            result.append(chapter_dict)
+            
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get chapters for a specific quiz
+@app.route('/api/quizzes/<int:quiz_id>/chapters', methods=['GET'])
+def api_get_quiz_chapters(quiz_id):
+    try:
+        # Verify quiz exists
+        quiz = Quiz.query.get_or_404(quiz_id)
+        
+        # Get chapters
+        chapters = Chapter.query.filter_by(quiz_id=quiz_id).all()
+        result = []
+        
+        for chapter in chapters:
+            chapter_dict = object_to_dict(chapter)
+            # Add questions count
+            chapter_dict['questions_count'] = Questions.query.filter_by(chapter_id=chapter.id).count()
+            result.append(chapter_dict)
+            
+        return jsonify({
+            'status': 'success', 
+            'data': result, 
+            'quiz': {'id': quiz.id, 'title': quiz.title}
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get specific chapter
+@app.route('/api/chapters/<int:chapter_id>', methods=['GET'])
+def api_get_chapter(chapter_id):
+    try:
+        chapter = Chapter.query.get_or_404(chapter_id)
+        result = object_to_dict(chapter)
+        
+        # Add quiz information
+        quiz = Quiz.query.get(chapter.quiz_id)
+        result['quiz'] = {'id': quiz.id, 'title': quiz.title} if quiz else None
+        
+        # Get questions
+        questions = Questions.query.filter_by(chapter_id=chapter_id).all()
+        result['questions_count'] = len(questions)
+        
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get scores for a specific user
+@app.route('/api/users/<int:user_id>/scores', methods=['GET'])
+@auth_required
+def api_get_user_scores(user_id):
+    try:
+        # Check permissions - only user can see their own scores or admin can see all
+        current_user_id = session.get('user_id')
+        current_user = Users.query.get(current_user_id)
+        
+        if current_user_id != user_id and current_user.role != 'admin':
+            return jsonify({'status': 'error', 'message': 'Permission denied'}), 403
+            
+        # Get user
+        user = Users.query.get_or_404(user_id)
+        
+        # Get all completed attempts
+        attempts = QuizAttempts.query.filter_by(
+            user_id=user_id,
+            is_completed=True
+        ).order_by(QuizAttempts.end_time.desc()).all()
+        
+        result = []
+        for attempt in attempts:
+            quiz = Quiz.query.get(attempt.quiz_id)
+            
+            attempt_data = {
+                'attempt_id': attempt.id,
+                'quiz_id': attempt.quiz_id,
+                'quiz_title': quiz.title if quiz else f"Quiz #{attempt.quiz_id}",
+                'score': float(attempt.score) if attempt.score else 0,
+                'start_time': attempt.start_time.isoformat() if attempt.start_time else None,
+                'end_time': attempt.end_time.isoformat() if attempt.end_time else None,
+                'time_taken': attempt.time_taken
+            }
+            
+            # Add categories
+            if quiz:
+                attempt_data['categories'] = [{'id': cat.id, 'name': cat.name} for cat in quiz.categories]
+            
+            result.append(attempt_data)
+        
+        # Add statistics
+        user_stats = UserStatistic.query.filter_by(user_id=user_id).first()
+        statistics = None
+        if user_stats:
+            statistics = {
+                'total_quizzes_taken': user_stats.total_quizzes_taken,
+                'total_correct_answers': user_stats.total_correct_answers,
+                'total_questions_attempted': user_stats.total_questions_attempted,
+                'average_score': float(user_stats.average_score) if user_stats.average_score else 0,
+                'current_streak': user_stats.current_streak,
+                'longest_streak': user_stats.longest_streak
+            }
+            
+        return jsonify({
+            'status': 'success', 
+            'data': {
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'full_name': user.full_name
+                },
+                'attempts': result,
+                'statistics': statistics
+            }
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# API - Get scores for a specific quiz
+@app.route('/api/quizzes/<int:quiz_id>/scores', methods=['GET'])
+@auth_required
+def api_get_quiz_scores(quiz_id):
+    try:
+        # Verify quiz exists
+        quiz = Quiz.query.get_or_404(quiz_id)
+        
+        # Only admin can see all scores, regular users can only see their own
+        current_user_id = session.get('user_id')
+        current_user = Users.query.get(current_user_id)
+        
+        if current_user.role == 'admin':
+            # Admin can see all scores
+            attempts = QuizAttempts.query.filter_by(
+                quiz_id=quiz_id,
+                is_completed=True
+            ).order_by(QuizAttempts.score.desc()).all()
+        else:
+            # Regular users can only see their own scores
+            attempts = QuizAttempts.query.filter_by(
+                quiz_id=quiz_id,
+                user_id=current_user_id,
+                is_completed=True
+            ).order_by(QuizAttempts.score.desc()).all()
+        
+        result = []
+        for attempt in attempts:
+            user = Users.query.get(attempt.user_id)
+            
+            attempt_data = {
+                'attempt_id': attempt.id,
+                'user_id': attempt.user_id,
+                'username': user.username if user else f"User #{attempt.user_id}",
+                'score': float(attempt.score) if attempt.score else 0,
+                'start_time': attempt.start_time.isoformat() if attempt.start_time else None,
+                'end_time': attempt.end_time.isoformat() if attempt.end_time else None,
+                'time_taken': attempt.time_taken
+            }
+            
+            result.append(attempt_data)
+        
+        # Calculate quiz statistics
+        avg_score = 0
+        if attempts:
+            valid_scores = [a.score for a in attempts if a.score is not None]
+            if valid_scores:
+                avg_score = sum(valid_scores) / len(valid_scores)
+        
+        return jsonify({
+            'status': 'success', 
+            'data': {
+                'quiz': {
+                    'id': quiz.id,
+                    'title': quiz.title,
+                    'description': quiz.description
+                },
+                'statistics': {
+                    'total_attempts': len(attempts),
+                    'average_score': round(float(avg_score), 2)
+                },
+                'attempts': result
+            }
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 
