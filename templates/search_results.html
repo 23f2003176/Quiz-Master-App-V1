@@ -3,75 +3,134 @@
 {% block title %}Search Results - Kuizu{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <!-- Search Results Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Search Results</li>
-                </ol>
-            </nav>
-            <h1 class="fw-bold">Search Results</h1>
-            <p class="text-muted">Found {{ result_count }} results for: <span class="fw-bold">"{{ query }}"</span></p>
+<div class="container py-4">
+    <!-- Search Header -->
+    <div class="search-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+                        <li class="breadcrumb-item active">Search Results</li>
+                    </ol>
+                </nav>
+                <h1 class="fw-bold mb-0">Search Results</h1>
+                <p class="text-white-60 mb-0">Found {{ result_count }} results for: <span class="search-term">"{{ query }}"</span></p>
+            </div>
+            <div class="d-none d-md-block">
+                <form action="{{ url_for('search_quizzes') }}" method="GET" class="search-form-inline">
+                    <div class="input-group search-form-header">
+                        <input type="text" name="query" class="form-control" placeholder="Search for quizzes..." value="{{ query }}">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Options - Using links  -->
+    <div class="filter-section mb-4">
+        <div class="blur-bg rounded-4 p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-auto">
+                    <label class="fw-medium text-white-80"><i class="bi bi-funnel me-2"></i>Filter Results:</label>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('search_quizzes', query=query, filter='all') }}" class="filter-btn {% if filter == 'all' or not filter %}active{% endif %}">
+                        All <span class="filter-count">({{ result_count }})</span>
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('search_quizzes', query=query, filter='ongoing') }}" class="filter-btn {% if filter == 'ongoing' %}active{% endif %}">
+                        Ongoing <span class="filter-count">({{ ongoing_quizzes|length }})</span>
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('search_quizzes', query=query, filter='upcoming') }}" class="filter-btn {% if filter == 'upcoming' %}active{% endif %}">
+                        Upcoming <span class="filter-count">({{ upcoming_quizzes|length }})</span>
+                    </a>
+                </div>
+                <div class="col-auto">
+                    <a href="{{ url_for('search_quizzes', query=query, filter='past') }}" class="filter-btn {% if filter == 'past' %}active{% endif %}">
+                        Past <span class="filter-count">({{ past_quizzes|length }})</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
     
     <!-- No Results -->
     {% if result_count == 0 %}
-    <div class="card border-0 shadow-sm p-4 mb-5">
-        <div class="text-center py-4">
-            <i class="bi bi-search" style="font-size: 3rem; color: #ddd;"></i>
-            <p class="text-muted mt-3 mb-0">No quizzes found matching "{{ query }}".</p>
-            <p class="small text-muted">Try different keywords or explore our available quizzes.</p>
-            <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Browse All Quizzes</a>
+    <div class="empty-state my-5">
+        <div class="empty-state-icon">
+            <i class="bi bi-search"></i>
         </div>
+        <h4 class="mt-3">No quizzes found</h4>
+        <p class="text-white-60 mb-4">We couldn't find any quizzes matching "{{ query }}"</p>
+        <a href="{{ url_for('index') }}" class="btn btn-gradient-primary px-4 py-2">
+            <i class="bi bi-grid me-2"></i> Browse All Quizzes
+        </a>
     </div>
     {% endif %}
     
-    <!-- Ongoing Quizzes -->
-    {% if ongoing_quizzes %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="fw-bold h4"><i class="bi bi-hourglass-split text-danger me-2"></i>Ongoing Quizzes</h2>
-            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+    <!-- Results Container -->
+    <div class="results-container">
+        <!-- Ongoing Quizzes - Only show if filter is 'all' or 'ongoing' -->
+        {% if (filter == 'all' or not filter or filter == 'ongoing') and ongoing_quizzes %}
+        <div class="quiz-section mb-5">
+            <div class="section-header d-flex align-items-center">
+                <div class="section-icon live-icon me-3">
+                    <i class="bi bi-lightning-charge"></i>
+                </div>
+                <h2 class="section-title fw-bold m-0">Ongoing Quizzes</h2>
+                <div class="ms-auto section-badge live-badge">{{ ongoing_quizzes|length }} LIVE</div>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mt-3">
                 {% for quiz in ongoing_quizzes %}
                 <div class="col">
-                    <div class="card h-100 border-0 shadow-sm quiz-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
-                                <span class="badge bg-danger">LIVE</span>
+                    <div class="quiz-card h-100">
+                        <div class="quiz-card-body">
+                            <div class="quiz-card-header">
+                                <div class="status-badge live">LIVE</div>
+                                <h3 class="quiz-title fw-bold">{{ quiz.title }}</h3>
                             </div>
-                            <p class="card-text text-muted">{{ quiz.description }}</p>
                             
-                            <!-- Chapter display -->
+                            <p class="quiz-description">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter tags -->
                             {% if quiz_chapters[quiz.id] %}
-                            <div class="mb-3">
-                                <h6 class="mb-2 text-primary">Chapters:</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% for chapter in quiz_chapters[quiz.id] %}
-                                    <span class="badge bg-light text-dark p-2">
-                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
-                                    </span>
-                                    {% endfor %}
-                                </div>
+                            <div class="quiz-tags">
+                                {% for chapter in quiz_chapters[quiz.id][:3] %}
+                                <span class="quiz-tag">
+                                    <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                </span>
+                                {% endfor %}
+                                {% if quiz_chapters[quiz.id]|length > 3 %}
+                                <span class="quiz-tag more">+{{ quiz_chapters[quiz.id]|length - 3 }}</span>
+                                {% endif %}
                             </div>
                             {% endif %}
                             
-                            <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-clock me-1"></i> {{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}
-                                    </span>
-                                    <span class="badge bg-light text-dark ms-2">
-                                        <i class="bi bi-award me-1"></i> {{ quiz.passing_score or 'N/A' }}{% if quiz.passing_score %}%{% endif %}
-                                    </span>
+                            <div class="quiz-meta">
+                                <div class="quiz-meta-item">
+                                    <i class="bi bi-clock"></i>
+                                    <span>{{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}</span>
                                 </div>
-                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-primary">
-                                    <i class="bi bi-play-fill me-1"></i> Start Quiz
+                                <div class="quiz-meta-item">
+                                    <i class="bi bi-award"></i>
+                                    <span>{{ quiz.passing_score or 'N/A' }}{% if quiz.passing_score %}%{% endif %}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="quiz-actions">
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn-quiz-info" title="View Details">
+                                    <i class="bi bi-info-circle"></i>
+                                </a>
+                                <a href="{{ url_for('start_quiz', quiz_id=quiz.id) }}" class="btn-quiz-start">
+                                    Start Quiz <i class="bi bi-play-fill ms-1"></i>
                                 </a>
                             </div>
                         </div>
@@ -80,52 +139,70 @@
                 {% endfor %}
             </div>
         </div>
-    </div>
-    {% endif %}
-    
-    <!-- Upcoming Quizzes -->
-    {% if upcoming_quizzes %}
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="fw-bold h4"><i class="bi bi-calendar-event text-success me-2"></i>Upcoming Quizzes</h2>
-            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+        {% endif %}
+        
+        <!-- Upcoming Quizzes - Only show if filter is 'all' or 'upcoming' -->
+        {% if (filter == 'all' or not filter or filter == 'upcoming') and upcoming_quizzes %}
+        <div class="quiz-section mb-5">
+            <div class="section-header d-flex align-items-center">
+                <div class="section-icon upcoming-icon me-3">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <h2 class="section-title fw-bold m-0">Upcoming Quizzes</h2>
+                <div class="ms-auto section-badge upcoming-badge">{{ upcoming_quizzes|length }} SCHEDULED</div>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mt-3">
                 {% for quiz in upcoming_quizzes %}
                 <div class="col">
-                    <div class="card h-100 border-0 shadow-sm quiz-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
-                                <span class="badge bg-warning text-dark">UPCOMING</span>
+                    <div class="quiz-card upcoming h-100">
+                        <div class="quiz-card-body">
+                            <div class="quiz-card-header">
+                                <div class="status-badge upcoming">UPCOMING</div>
+                                <h3 class="quiz-title fw-bold">{{ quiz.title }}</h3>
                             </div>
-                            <p class="card-text text-muted">{{ quiz.description }}</p>
                             
-                            <!-- Chapter display -->
+                            <p class="quiz-description">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter tags -->
                             {% if quiz_chapters[quiz.id] %}
-                            <div class="mb-3">
-                                <h6 class="mb-2 text-primary">Chapters:</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% for chapter in quiz_chapters[quiz.id] %}
-                                    <span class="badge bg-light text-dark p-2">
-                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
-                                    </span>
-                                    {% endfor %}
-                                </div>
+                            <div class="quiz-tags">
+                                {% for chapter in quiz_chapters[quiz.id][:3] %}
+                                <span class="quiz-tag">
+                                    <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                </span>
+                                {% endfor %}
+                                {% if quiz_chapters[quiz.id]|length > 3 %}
+                                <span class="quiz-tag more">+{{ quiz_chapters[quiz.id]|length - 3 }}</span>
+                                {% endif %}
                             </div>
                             {% endif %}
                             
-                            <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-calendar-date me-1"></i> {{ quiz.start_time.strftime('%d %b, %Y') }}
-                                    </span>
-                                    <span class="badge bg-light text-dark ms-2">
-                                        <i class="bi bi-clock me-1"></i> {{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}
-                                    </span>
+                            <div class="quiz-meta">
+                                <div class="quiz-meta-item">
+                                    <i class="bi bi-calendar-date"></i>
+                                    <span>{{ quiz.start_time.strftime('%d %b, %Y') if quiz.start_time else 'Date TBD' }}</span>
                                 </div>
-                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-info-circle me-1"></i> Details
+                                <div class="quiz-meta-item">
+                                    <i class="bi bi-clock"></i>
+                                    <span>{{ quiz.time_limit or 'No limit' }}{% if quiz.time_limit %} min{% endif %}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="quiz-actions">
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn-quiz-info" title="View Details">
+                                    <i class="bi bi-info-circle"></i>
                                 </a>
+                                <!-- Replace placeholder notification with bookmark functionality -->
+                                <form action="{{ url_for('bookmark_quiz', quiz_id=quiz.id) }}" method="post" style="display: inline;">
+                                    <button type="submit" class="btn-quiz-notify">
+                                        {% if quiz.id in bookmarked_quizzes %}
+                                        <i class="bi bi-bookmark-check-fill me-2"></i> Bookmarked
+                                        {% else %}
+                                        <i class="bi bi-bookmark-plus me-2"></i> Bookmark
+                                        {% endif %}
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -133,49 +210,66 @@
                 {% endfor %}
             </div>
         </div>
-    </div>
-    {% endif %}
-    
-    <!-- Past Quizzes -->
-    {% if past_quizzes %}
-    <div class="row">
-        <div class="col-12">
-            <h2 class="fw-bold h4"><i class="bi bi-clock-history text-secondary me-2"></i>Past Quizzes</h2>
-            <div class="row row-cols-1 row-cols-md-2 g-4 mt-2">
+        {% endif %}
+        
+        <!-- Past Quizzes - Only show if filter is 'all' or 'past' -->
+        {% if (filter == 'all' or not filter or filter == 'past') and past_quizzes %}
+        <div class="quiz-section">
+            <div class="section-header d-flex align-items-center">
+                <div class="section-icon past-icon me-3">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <h2 class="section-title fw-bold m-0">Past Quizzes</h2>
+                <div class="ms-auto section-badge past-badge">{{ past_quizzes|length }} COMPLETED</div>
+            </div>
+            
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mt-3">
                 {% for quiz in past_quizzes %}
                 <div class="col">
-                    <div class="card h-100 border-0 shadow-sm quiz-card">
-                        <div class="card-body p-4">
-                            <div class="d-flex justify-content-between mb-3">
-                                <h5 class="card-title fw-bold mb-0">{{ quiz.title }}</h5>
-                                <span class="badge bg-secondary">ENDED</span>
+                    <div class="quiz-card past h-100">
+                        <div class="quiz-card-body">
+                            <div class="quiz-card-header">
+                                <div class="status-badge past">ENDED</div>
+                                <h3 class="quiz-title fw-bold">{{ quiz.title }}</h3>
                             </div>
-                            <p class="card-text text-muted">{{ quiz.description }}</p>
                             
-                            <!-- Chapter display -->
+                            <p class="quiz-description">{{ quiz.description }}</p>
+                            
+                            <!-- Chapter tags -->
                             {% if quiz_chapters[quiz.id] %}
-                            <div class="mb-3">
-                                <h6 class="mb-2 text-primary">Chapters:</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    {% for chapter in quiz_chapters[quiz.id] %}
-                                    <span class="badge bg-light text-dark p-2">
-                                        <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
-                                    </span>
-                                    {% endfor %}
-                                </div>
+                            <div class="quiz-tags">
+                                {% for chapter in quiz_chapters[quiz.id][:3] %}
+                                <span class="quiz-tag">
+                                    <i class="bi bi-journal-text me-1"></i> {{ chapter.title }}
+                                </span>
+                                {% endfor %}
+                                {% if quiz_chapters[quiz.id]|length > 3 %}
+                                <span class="quiz-tag more">+{{ quiz_chapters[quiz.id]|length - 3 }}</span>
+                                {% endif %}
                             </div>
                             {% endif %}
                             
-                            <hr>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-light text-dark">
-                                        <i class="bi bi-calendar-x me-1"></i> {{ quiz.end_time.strftime('%d %b, %Y') }}
-                                    </span>
+                            <div class="quiz-meta">
+                                <div class="quiz-meta-item">
+                                    <i class="bi bi-calendar-x"></i>
+                                    <span>{{ quiz.end_time.strftime('%d %b, %Y') if quiz.end_time else 'Date unavailable' }}</span>
                                 </div>
-                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">
-                                    <i class="bi bi-eye me-1"></i> View Results
+                            </div>
+                            
+                            <div class="quiz-actions">
+                                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn-quiz-info" title="View Details">
+                                    <i class="bi bi-info-circle"></i>
                                 </a>
+                                <!-- Show results if the user has taken this quiz -->
+                                {% if quiz.id in user_completed_quizzes %}
+                                <a href="{{ url_for('quiz_results', quiz_id=quiz.id) }}" class="btn-quiz-results">
+                                    <i class="bi bi-file-earmark-text me-2"></i> View Results
+                                </a>
+                                {% else %}
+                                <span class="btn-quiz-disabled">
+                                    <i class="bi bi-file-earmark-text me-2"></i> Not Attempted
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -183,28 +277,23 @@
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
+        
+        <!-- Show message when no results match the current filter -->
+        {% if (filter == 'ongoing' and not ongoing_quizzes) or 
+              (filter == 'upcoming' and not upcoming_quizzes) or
+              (filter == 'past' and not past_quizzes) %}
+        <div class="empty-state my-5">
+            <div class="empty-state-icon">
+                <i class="bi bi-funnel"></i>
+            </div>
+            <h4 class="mt-3">No quizzes match this filter</h4>
+            <p class="text-white-60 mb-4">Try changing your filter or search term</p>
+            <a href="{{ url_for('search_quizzes', query=query) }}" class="btn btn-gradient-primary px-4 py-2">
+                <i class="bi bi-grid me-2"></i> Show All Results
+            </a>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
-
-<style>
-/* Custom styles for search results page */
-.quiz-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border-radius: 0.75rem;
-    overflow: hidden;
-}
-
-.quiz-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1) !important;
-}
-
-.badge {
-    font-weight: normal;
-    letter-spacing: 0.5px;
-    border-radius: 20px;
-    padding: 0.35em 0.65em;
-}
-</style>
 {% endblock %}

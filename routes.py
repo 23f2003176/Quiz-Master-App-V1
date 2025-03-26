@@ -1,5 +1,6 @@
 from flask import render_template, request, redirect, url_for, flash, session
 import os
+from datetime import datetime, timedelta
 from functools import wraps
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -10,6 +11,20 @@ from app import app  # Import the app instance from app.py
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+
+
+# Make sure thet user object is available in all templates
+@app.context_processor
+def inject_user():
+    """Make current user available to all templates"""
+    user = None
+    if 'user_id' in session:
+        user = Users.query.get(session['user_id'])
+    return {'user': user}
+
+
+
 
 def auth_required(func):
     @wraps(func)
@@ -28,6 +43,10 @@ def admin_required(func):
             return redirect(url_for('login'))
         
         user = Users.query.get(session['user_id'])
+        if not user:
+            flash("User not found", 'danger')
+            return redirect(url_for('login'))
+
         if user.role != 'admin':
             flash("You do not have permission to view this page")
             return redirect(url_for('index'))
@@ -140,6 +159,20 @@ def login_post():
 @app.route('/')
 @auth_required 
 def index():
+    user_id = session.get('user_id')
+    if not user_id:
+        flash('User not logged in', 'danger')
+        return redirect(url_for('login'))
+
+    user = Users.query.get(user_id)
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('login'))
+
+    # Redirect to admin dashboard if user is admin
+    if user.role == 'admin':
+        return redirect(url_for('admin_dashboard'))
+        
     ongoing_quizzes = Quiz.query.filter(Quiz.start_time <= datetime.now(), Quiz.end_time >= datetime.now()).all()
     upcoming_quizzes = Quiz.query.filter(Quiz.start_time > datetime.now()).all()
 
@@ -153,11 +186,6 @@ def index():
         chapters = Chapter.query.filter_by(quiz_id=quiz.id).all()
         upcoming_quizzes_chapters[quiz.id] = chapters
 
-    # Redirect to admin dashboard if user is admin
-    user = Users.query.get(session['user_id'])
-    if user.role == 'admin':
-        return redirect(url_for('admin_dashboard'))
-        
     return render_template('index.html', 
                           user=user,
                           ongoing_quizzes=ongoing_quizzes, 
@@ -174,6 +202,8 @@ def index():
 @auth_required
 def search_quizzes():
     query = request.args.get('query', '').strip()
+    filter_type = request.args.get('filter', 'all')  # Get filter parameter with default 'all'
+    
     if not query:
         return redirect(url_for('index'))
         
@@ -210,12 +240,26 @@ def search_quizzes():
     past_quizzes = []
     
     for quiz in all_quizzes:
-        if quiz.start_time <= now and quiz.end_time >= now:
-            ongoing_quizzes.append(quiz)
-        elif quiz.start_time > now:
-            upcoming_quizzes.append(quiz)
+        if quiz.start_time and quiz.end_time:  # Check if dates exist
+            if quiz.start_time <= now and quiz.end_time >= now:
+                ongoing_quizzes.append(quiz)
+            elif quiz.start_time > now:
+                upcoming_quizzes.append(quiz)
+            else:
+                past_quizzes.append(quiz)
         else:
-            past_quizzes.append(quiz)
+            # Handle quizzes with missing dates - consider as ongoing by default
+            ongoing_quizzes.append(quiz)
+    
+    # Calculate the total result count based on the filter
+    if filter_type == 'ongoing':
+        filtered_count = len(ongoing_quizzes)
+    elif filter_type == 'upcoming':
+        filtered_count = len(upcoming_quizzes)
+    elif filter_type == 'past':
+        filtered_count = len(past_quizzes)
+    else:  # 'all' or any other value
+        filtered_count = len(all_quizzes)
     
     user = Users.query.get(session['user_id'])
     return render_template('search_results.html', 
@@ -225,9 +269,362 @@ def search_quizzes():
                           past_quizzes=past_quizzes,
                           quiz_chapters=quiz_chapters,
                           query=query,
-                          result_count=len(all_quizzes))
+                          filter=filter_type,  # Pass the filter parameter to the template
+                          result_count=len(all_quizzes),
+                          filtered_count=filtered_count)  # Pass filtered count for display
 
 
+
+
+#---------------------------
+# Search Students for admin
+#---------------------------
+@app.route('/search_students')
+@auth_required
+@admin_required
+def search_students():
+    query = request.args.get('query', '').strip()
+    if not query:
+        return redirect(url_for('admin_dashboard'))
+    
+    # Search for students by username, email or full name
+    students = Users.query.filter(
+        Users.role == 'student',
+        db.or_(
+            Users.username.ilike(f'%{query}%'),
+            Users.email.ilike(f'%{query}%'),
+            Users.full_name.ilike(f'%{query}%')
+        )
+    ).all()
+    
+    # Get statistics for each student
+    for student in students:
+        # Attach user statistics if available
+        student.stats = UserStatistic.query.filter_by(user_id=student.id).first()
+        
+        # Get total completed quizzes
+        student.completed_quizzes = QuizAttempts.query.filter_by(
+            user_id=student.id,
+            is_completed=True
+        ).count()
+        
+        # Calculate average score
+        completed_attempts = QuizAttempts.query.filter(
+            QuizAttempts.user_id == student.id,
+            QuizAttempts.score.isnot(None)
+        ).all()
+        
+        if completed_attempts:
+            student.avg_score = sum(float(a.score) for a in completed_attempts) / len(completed_attempts)
+        else:
+            student.avg_score = 0
+    
+    user = Users.query.get(session['user_id'])  # Admin user for navbar
+    return render_template('search_students.html', 
+                          user=user,
+                          students=students, 
+                          query=query,
+                          result_count=len(students))
+
+
+
+
+
+
+
+#-------------------------
+# Student Quiz Details
+#-------------------------
+
+@app.route('/quiz_details/<int:quiz_id>')
+@auth_required
+def student_quiz_details(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    chapters = Chapter.query.filter_by(quiz_id=quiz_id).all()
+    questions = Questions.query.filter_by(quiz_id=quiz_id).all()
+    
+    # Get user's attempts for this quiz
+    user = Users.query.get(session['user_id'])
+    attempts = QuizAttempts.query.filter_by(user_id=user.id, quiz_id=quiz_id).all()
+    
+    # Get user's best attempt - handle None scores properly
+    best_attempt = None
+    if attempts:
+        # Filter out attempts with None scores before finding max
+        valid_attempts = [a for a in attempts if a.score is not None]
+        if valid_attempts:
+            best_attempt = max(valid_attempts, key=lambda a: a.score)
+    
+    # Calculate max attempts from categories
+    max_attempts = 0
+    for category in quiz.categories:
+        if category.max_attempts and category.max_attempts > max_attempts:
+            max_attempts = category.max_attempts
+    
+    return render_template('student_quiz_details.html', 
+                          quiz=quiz,
+                          chapters=chapters,
+                          questions=questions,
+                          attempts=attempts,
+                          best_attempt=best_attempt,
+                          max_attempts=max_attempts) 
+
+
+#----------------
+# Start Quiz
+#----------------
+@app.route('/start_quiz/<int:quiz_id>', methods=['GET', 'POST'])
+@app.route('/start_quiz/<int:quiz_id>/<int:chapter_id>', methods=['GET', 'POST'])
+@auth_required
+def start_quiz(quiz_id, chapter_id=None):
+    # Get quiz and verify it exists
+    quiz = Quiz.query.get_or_404(quiz_id)
+    
+    # Get all chapters for this quiz
+    chapters = Chapter.query.filter_by(quiz_id=quiz_id).all()
+    
+    # Handle chapter selection
+    current_chapter = None
+    if chapter_id:
+        # If chapter_id is specified in URL, use that chapter
+        current_chapter = Chapter.query.get_or_404(chapter_id)
+        questions = Questions.query.filter_by(quiz_id=quiz_id, chapter_id=chapter_id).all()
+    else:
+        # If no chapter_id specified, use the first chapter if available
+        if chapters:
+            current_chapter = chapters[0]
+            questions = Questions.query.filter_by(quiz_id=quiz_id, chapter_id=current_chapter.id).all()
+        else:
+            # If no chapters exist, get all questions
+            questions = Questions.query.filter_by(quiz_id=quiz_id).all()
+    
+    # Make sure we have questions
+    if not questions:
+        flash('This quiz does not have any questions yet.', 'warning')
+        return redirect(url_for('student_quiz_details', quiz_id=quiz_id))
+    
+    # Check attempt limits for THIS SPECIFIC QUIZ only
+    try:
+        user_id = session['user_id']
+        
+        # Count attempts for THIS quiz only
+        user_quiz_attempts = QuizAttempts.query.filter_by(
+            quiz_id=quiz_id,
+            user_id=user_id,
+            is_completed=True
+        ).count()
+        
+        # Get max attempts from quiz or use default
+        quiz_max_attempts = quiz.max_attempts if quiz.max_attempts else 1
+        
+        # Check if user has reached max attempts for this quiz
+        if user_quiz_attempts >= quiz_max_attempts:
+            flash(f'You have reached the maximum number of attempts ({quiz_max_attempts}) for this quiz.', 'warning')
+            return redirect(url_for('student_quiz_details', quiz_id=quiz_id))
+        
+    except Exception as e:
+        print(f"Error checking quiz attempt limits: {e}")
+    
+    # Create a consistent session key for this quiz
+    quiz_session_key = f'quiz_{quiz_id}_session'
+    
+    # Initialize quiz session if needed
+    if quiz_session_key not in session:
+        # Create a new quiz attempt
+        quiz_attempt = QuizAttempts(
+            quiz_id=quiz_id,
+            user_id=session['user_id'],
+            start_time=datetime.now(),
+            is_completed=False
+        )
+        db.session.add(quiz_attempt)
+        db.session.commit()
+        
+        # Initialize session with basic data - ALWAYS start at question 0
+        session[quiz_session_key] = {
+            'attempt_id': quiz_attempt.id,
+            'start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'current_question': 0,  # Always start at the first question
+            'visited_questions': [],
+            'answered_questions': [],
+            'user_answers': {}
+        }
+        session.modified = True
+    
+    # Get the current quiz session
+    quiz_session = session.get(quiz_session_key, {})
+    current_idx = int(quiz_session.get('current_question', 0))  # Ensure this is an integer
+    
+    # Handle POST requests (form submissions)
+    if request.method == 'POST':
+        question_id = request.form.get('question_id')
+        action = request.form.get('action', '')
+        
+        # Process the user's answers
+        if question_id:
+            # Mark question as visited
+            visited = quiz_session.get('visited_questions', [])
+            if int(question_id) not in visited:
+                visited.append(int(question_id))
+                quiz_session['visited_questions'] = visited
+            
+            # Handle answer submission
+            answer_values = request.form.getlist('answer')
+            if answer_values:
+                # Convert to string keys for JSON serialization in session
+                question_id_str = str(question_id)
+                user_answers = quiz_session.get('user_answers', {})
+                user_answers[question_id_str] = answer_values
+                quiz_session['user_answers'] = user_answers
+                
+                answered = quiz_session.get('answered_questions', [])
+                if int(question_id) not in answered:
+                    answered.append(int(question_id))
+                    quiz_session['answered_questions'] = answered
+            
+            # Handle specific actions
+            if action == 'clear':
+                # Clear the answer for this question
+                if 'user_answers' in quiz_session and str(question_id) in quiz_session['user_answers']:
+                    del quiz_session['user_answers'][str(question_id)]
+                
+                if 'answered_questions' in quiz_session and int(question_id) in quiz_session['answered_questions']:
+                    quiz_session['answered_questions'].remove(int(question_id))
+                
+            elif action == 'next' and current_idx < len(questions) - 1:
+                # Move to next question
+                quiz_session['current_question'] = current_idx + 1
+                print(f"Moving to next question: {current_idx + 1}")
+                
+            elif action == 'prev' and current_idx > 0:
+                # Move to previous question
+                quiz_session['current_question'] = current_idx - 1
+                print(f"Moving to previous question: {current_idx - 1}")
+                
+            elif action == 'submit':
+                # Process submission and save all answers to database
+                attempt_id = quiz_session.get('attempt_id')
+                
+                # Get the attempt from database
+                attempt = QuizAttempts.query.get(attempt_id)
+                
+                # If attempt doesn't exist, create a new one
+                if attempt is None:
+                    start_time = datetime.strptime(quiz_session.get('start_time', datetime.now().strftime('%Y-%m-%d %H:%M:%S')), '%Y-%m-%d %H:%M:%S')
+                    attempt = QuizAttempts(
+                        quiz_id=quiz_id,
+                        user_id=session['user_id'],
+                        start_time=start_time,
+                        is_completed=False
+                    )
+                    db.session.add(attempt)
+                    db.session.commit()
+                    quiz_session['attempt_id'] = attempt.id
+                
+                # Save answers to database
+                user_answers = quiz_session.get('user_answers', {})
+                for q_id_str, answers in user_answers.items():
+                    q_id = int(q_id_str)
+                    question = Questions.query.get(q_id)
+                    if not question:
+                        continue
+                    
+                    # Handle different question types
+                    if question.question_type == 'multiple_choice':
+                        for answer_id in answers:
+                            answer = Answers.query.get(int(answer_id))
+                            if answer:
+                                # Create user response record
+                                response = UserResponse(
+                                    question_id=q_id,
+                                    answer_id=int(answer_id),
+                                    attempt_id=attempt.id,
+                                    is_correct=answer.is_correct,
+                                    points_earned=question.points if answer.is_correct else 0
+                                )
+                                db.session.add(response)
+                
+                # Update attempt status
+                attempt.end_time = datetime.now()
+                attempt.is_completed = True
+                
+                # Calculate time taken
+                if attempt.start_time:
+                    attempt.time_taken = int((attempt.end_time - attempt.start_time).total_seconds())
+                
+                # Calculate score
+                total_points = sum(q.points for q in questions if q.points) or 1
+                correct_responses = UserResponse.query.filter_by(
+                    attempt_id=attempt.id, is_correct=True
+                ).all()
+                earned_points = sum(float(r.points_earned or 0) for r in correct_responses)
+                attempt.score = (earned_points / total_points) * 100
+                
+                db.session.commit()
+                
+                # Clean up session
+                if quiz_session_key in session:
+                    del session[quiz_session_key]
+                    session.modified = True
+                
+                flash('Quiz completed successfully!', 'success')
+                return redirect(url_for('student_quiz_details', quiz_id=quiz_id))
+        
+        # Save session changes
+        session[quiz_session_key] = quiz_session
+        session.modified = True
+        
+        # Redirect to maintain form state
+        if chapter_id:
+            return redirect(url_for('start_quiz', quiz_id=quiz_id, chapter_id=chapter_id))
+        else:
+            return redirect(url_for('start_quiz', quiz_id=quiz_id))
+    
+    # For GET requests: Prepare data for rendering
+    if questions:
+        # Make sure current_idx is in bounds
+        if current_idx >= len(questions):
+            current_idx = 0
+            quiz_session['current_question'] = 0
+            session[quiz_session_key] = quiz_session
+            session.modified = True
+        
+        current_question = questions[current_idx]
+        answers = Answers.query.filter_by(question_id=current_question.question_id).all()
+    else:
+        current_question = None
+        answers = []
+    
+    # Calculate time remaining
+    time_remaining = None
+    if quiz.time_limit and 'start_time' in quiz_session:
+        try:
+            start_time = datetime.strptime(quiz_session.get('start_time'), '%Y-%m-%d %H:%M:%S')
+            elapsed_seconds = (datetime.now() - start_time).total_seconds()
+            time_limit_seconds = quiz.time_limit * 60
+            remaining_seconds = max(0, time_limit_seconds - elapsed_seconds)
+            
+            # Format time for display
+            hours = int(remaining_seconds // 3600)
+            minutes = int((remaining_seconds % 3600) // 60)
+            seconds = int(remaining_seconds % 60)
+            time_remaining = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        except Exception as e:
+            print(f"Error calculating time: {e}")
+    
+    # Return the template with all required data
+    return render_template('start_quiz.html', 
+                          quiz=quiz,
+                          current_chapter=current_chapter,
+                          chapters=chapters,
+                          questions=questions,
+                          answers=answers,
+                          current_question=current_idx,
+                          current_question_data=current_question,
+                          visited_questions=quiz_session.get('visited_questions', []),
+                          answered_questions=quiz_session.get('answered_questions', []),
+                          user_answers=quiz_session.get('user_answers', {}),
+                          time_remaining=time_remaining)
 
 
 #----------------
@@ -543,13 +940,181 @@ def delete_quiz(quiz_id):
 #-------------
 
 @app.route('/dashboard')
-@auth_required 
+@auth_required
 def dashboard():
-    # if 'user_id' not in session:
-    #     flash("Login to continue")
-    #     return redirect(url_for('login'))
+    # Get user
     user = Users.query.get(session['user_id'])
-    return render_template('dashboard.html', user=user)
+    
+    # Statistics
+    statistics = {
+        'total_quizzes_taken': 0,
+        'average_score': 0,
+        'current_streak': 0,
+        'total_questions_attempted': 0,
+        'total_correct_answers': 0,
+        'total_points_earned': 0
+    }
+    
+    # Get user statistics
+    user_statistic = UserStatistic.query.filter_by(user_id=user.id).first()
+    if user_statistic:
+        statistics = {
+            'total_quizzes_taken': user_statistic.total_quizzes_taken,
+            'average_score': user_statistic.average_score,
+            'current_streak': user_statistic.current_streak,
+            'total_questions_attempted': user_statistic.total_questions_attempted,
+            'total_correct_answers': user_statistic.total_correct_answers
+        }
+    
+    # Get all completed quiz attempts for charts
+    completed_attempts = QuizAttempts.query.filter_by(
+        user_id=user.id, 
+        is_completed=True
+    ).order_by(QuizAttempts.start_time).all()
+    
+    # Get recent attempts (latest 5)
+    recent_attempts = QuizAttempts.query.filter_by(
+        user_id=user.id
+    ).order_by(QuizAttempts.start_time.desc()).limit(5).all()
+    
+    # Add quiz titles to attempts
+    for attempt in recent_attempts:
+        quiz = Quiz.query.get(attempt.quiz_id)
+        attempt.quiz_title = quiz.title if quiz else f"Quiz #{attempt.quiz_id}"
+    
+    # --------- SUBJECT-WISE PERFORMANCE DATA ---------
+    
+    # Get time range for chart (last 30 days)
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=30)
+    
+    # Group attempts by date and subject
+    subject_performance = {}
+    date_labels = []
+    
+    # Loop through each attempt
+    for attempt in completed_attempts:
+        if attempt.score is None or attempt.start_time < start_date:
+            continue
+            
+        # Get quiz categories
+        quiz = Quiz.query.get(attempt.quiz_id)
+        if not quiz:
+            continue
+            
+        # Format date for grouping (YYYY-MM-DD)
+        attempt_date = attempt.start_time.strftime('%Y-%m-%d')
+        
+        # Track unique dates for x-axis labels
+        if attempt_date not in date_labels:
+            date_labels.append(attempt_date)
+            
+        # Group by category
+        for category in quiz.categories:
+            if category.name not in subject_performance:
+                subject_performance[category.name] = {}
+                
+            if attempt_date not in subject_performance[category.name]:
+                subject_performance[category.name][attempt_date] = []
+                
+            subject_performance[category.name][attempt_date].append(attempt.score)
+    
+    # Sort dates chronologically
+    date_labels.sort()
+    
+    # Format dates for display (Apr 15, etc.)
+    formatted_dates = [datetime.strptime(d, '%Y-%m-%d').strftime('%b %d') for d in date_labels]
+    
+    # Calculate average score per subject per day
+    subject_datasets = []
+    all_subjects = list(subject_performance.keys())
+    
+    # Colors for subjects (can be extended for more subjects)
+    colors = [
+        {'bg': 'rgba(54, 162, 235, 0.2)', 'border': 'rgba(54, 162, 235, 1)'},
+        {'bg': 'rgba(255, 99, 132, 0.2)', 'border': 'rgba(255, 99, 132, 1)'},
+        {'bg': 'rgba(75, 192, 192, 0.2)', 'border': 'rgba(75, 192, 192, 1)'},
+        {'bg': 'rgba(255, 159, 64, 0.2)', 'border': 'rgba(255, 159, 64, 1)'},
+        {'bg': 'rgba(153, 102, 255, 0.2)', 'border': 'rgba(153, 102, 255, 1)'}
+    ]
+    
+    # Create dataset for each subject
+    for i, subject in enumerate(all_subjects):
+        color_index = i % len(colors)
+        
+        data_points = []
+        for date in date_labels:
+            if date in subject_performance[subject]:
+                avg_score = sum(subject_performance[subject][date]) / len(subject_performance[subject][date])
+                data_points.append(round(avg_score, 1))
+            else:
+                data_points.append(None)  # No data for this date
+        
+        subject_datasets.append({
+            'label': subject,
+            'data': data_points,
+            'fill': False,
+            'backgroundColor': colors[color_index]['bg'],
+            'borderColor': colors[color_index]['border'],
+            'tension': 0.1
+        })
+    
+    # Score distribution (for pie chart - unchanged)
+    score_distribution = {
+        'excellent': 0,
+        'good': 0,
+        'average': 0,
+        'poor': 0,
+        'total': 0
+    }
+    
+    for attempt in completed_attempts:
+        if attempt.score is not None:
+            score_distribution['total'] += 1
+            if attempt.score >= 90:
+                score_distribution['excellent'] += 1
+            elif attempt.score >= 75:
+                score_distribution['good'] += 1
+            elif attempt.score >= 60:
+                score_distribution['average'] += 1
+            else:
+                score_distribution['poor'] += 1
+    
+    # Subject overall performance (for radar chart)
+    subject_names = []
+    subject_scores = []
+    
+    # Get scores by category/subject
+    categories = Category.query.all()
+    for category in categories:
+        # Find quizzes with this category
+        quiz_ids = db.session.query(QuizCategory.quiz_id).filter_by(category_id=category.id).all()
+        quiz_ids = [q[0] for q in quiz_ids]
+        
+        if not quiz_ids:
+            continue
+            
+        # Find attempts for these quizzes
+        subject_attempts = QuizAttempts.query.filter(
+            QuizAttempts.user_id == user.id,
+            QuizAttempts.quiz_id.in_(quiz_ids),
+            QuizAttempts.score.isnot(None)
+        ).all()
+        
+        if subject_attempts:
+            avg_score = sum(a.score for a in subject_attempts) / len(subject_attempts)
+            subject_names.append(category.name)
+            subject_scores.append(round(avg_score, 1))
+    
+    return render_template('dashboard.html', 
+                          user=user, 
+                          statistics=statistics,
+                          recent_attempts=recent_attempts,
+                          date_labels=formatted_dates,  # Changed from quiz_labels
+                          subject_datasets=subject_datasets,  # Changed from quiz_scores
+                          score_distribution=score_distribution,
+                          subject_names=subject_names,
+                          subject_scores=subject_scores)
 
 
 

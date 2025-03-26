@@ -1,146 +1,143 @@
 {% extends 'layout.html' %}
-{% block title %}Admin Dashboard{% endblock %}
+{% block title %}Admin Dashboard - Kuizu{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <!-- Page Header -->
-    <div class="row mb-5">
-        <div class="col-12 text-center dashboard-header bg-dark">
-            <h2 class="display-4 fw-bold dashboard-title text-light">Admin Dashboard</h2>
-            <p class="lead dashboard-subtitle text-light-emphasis">Overview of your platform statistics</p>
-        </div>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4">
-        <!-- Students Card -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm stat-card primary-card bg-dark">
-                <div class="card-body text-center p-4">
-                    <div class="feature-icon bg-primary text-white rounded-circle mb-3">
-                        <i class="bi bi-people-fill"></i>
-                    </div>
-                    <h3 class="display-5 fw-bold text-primary stat-value">{{student_count}}</h3>
-                    <h6 class="text-uppercase stat-label text-light-emphasis">Total Students</h6>
-                </div>
+<div class="container py-4">
+    <!-- Hero Section -->
+    <div class="hero-section admin-hero mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-5 fw-bold text-white">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    Admin Dashboard
+                </h1>
+                <p class="lead text-white-80">
+                    Welcome to your control center. Manage your quizzes and students efficiently.
+                </p>
             </div>
-        </div>
-
-        <!-- Subjects Card -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm stat-card success-card">
-                <div class="card-body text-center p-4">
-                    <div class="feature-icon bg-success text-white rounded-circle mb-3">
-                        <i class="bi bi-book-fill"></i>
-                    </div>
-                    <h3 class="display-5 fw-bold text-success stat-value">{{subject_count}}</h3>
-                    <h6 class="text-uppercase stat-label">Total Subjects</h6>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quizzes Card -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm stat-card warning-card">
-                <div class="card-body text-center p-4">
-                    <div class="feature-icon bg-warning text-white rounded-circle mb-3">
-                        <i class="bi bi-pencil-square"></i>
-                    </div>
-                    <h3 class="display-5 fw-bold text-warning stat-value">{{quiz_count}}</h3>
-                    <h6 class="text-uppercase stat-label">Total Quizzes</h6>
-                </div>
-            </div>
-        </div>
-
-        <!-- Questions Card -->
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm stat-card info-card">
-                <div class="card-body text-center p-4">
-                    <div class="feature-icon bg-info text-white rounded-circle mb-3">
-                        <i class="bi bi-question-circle-fill"></i>
-                    </div>
-                    <h3 class="display-5 fw-bold text-info stat-value">{{question_count}}</h3>
-                    <h6 class="text-uppercase stat-label">Total Questions</h6>
-                </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('create_quiz') }}" class="btn btn-gradient-primary rounded-pill">
+                    <i class="bi bi-plus-circle me-2"></i> Create New Quiz
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Recent Quizzes pannel -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm bg-dark">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title text-light mb-0">Recent Quizzes</h4>
-                    <a href="{{ url_for('create_quiz') }}" class="btn btn-success">
-                        <i class="bi bi-plus-circle me-2"></i>Create Quiz
-                    </a>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-dark table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Quiz Title</th>
-                                    <th>Subject</th>
-                                    <th>Created Date</th>
-                                    <th>Questions</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if quizzes %}
-                                    {% for quiz in quizzes %}
-                                    <tr>
-                                        <td>{{ quiz.title }}</td>
-                                        <td>{{quiz.categories[0].name}}</td>
-                                        <td>{{ quiz.created_at.strftime('%Y-%m-%d') }}</td>
-                                        <td>{{ quiz.questions|length }}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{url_for('edit_quiz',quiz_id = quiz.id)}}" class="btn btn-info">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                                <a href="{{url_for('view_quiz',quiz_id = quiz.id)}}" class="btn btn-primary">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteQuiz{{ quiz.id }}">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted">No quizzes available</td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card blur-bg">
+                <i class="bi bi-people-fill metric-icon"></i>
+                <h2 class="metric-value">{{ student_count }}</h2>
+                <p class="metric-label">Students</p>
             </div>
-        </div>    
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card blur-bg">
+                <i class="bi bi-book-fill metric-icon"></i>
+                <h2 class="metric-value">{{ subject_count }}</h2>
+                <p class="metric-label">Subjects</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card blur-bg">
+                <i class="bi bi-pencil-square metric-icon"></i>
+                <h2 class="metric-value">{{ quiz_count }}</h2>
+                <p class="metric-label">Quizzes</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card blur-bg">
+                <i class="bi bi-question-circle-fill metric-icon"></i>
+                <h2 class="metric-value">{{ question_count }}</h2>
+                <p class="metric-label">Questions</p>
+            </div>
+        </div>
     </div>
+
+    <!-- Recent Quizzes -->
+    <div class="content-section blur-bg mb-4">
+        <h3 class="section-title">Recent Quizzes</h3>
+        {% if quizzes %}
+        <div class="table-responsive">
+            <table class="table table-borderless text-white">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Subject</th>
+                        <th>Created</th>
+                        <th>Questions</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for quiz in quizzes %}
+                    <tr>
+                        <td>{{ quiz.title }}</td>
+                        <td><span class="badge bg-gradient-info rounded-pill">{{ quiz.categories[0].name }}</span></td>
+                        <td>{{ quiz.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ quiz.questions|length }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_quiz', quiz_id=quiz.id) }}" class="btn btn-sm btn-outline-info rounded-pill">
+                                <i class="bi bi-pencil"></i> Edit
+                            </a>
+                            <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-sm btn-outline-light rounded-pill">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill" data-bs-toggle="modal" data-bs-target="#deleteQuiz{{ quiz.id }}">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state text-center py-5">
+            <div class="empty-state-icon">
+                <i class="bi bi-clipboard-x"></i>
+            </div>
+            <h5 class="mt-3 text-white">No Quizzes Available</h5>
+            <p class="text-white-60">You haven't created any quizzes yet.</p>
+            <a href="{{ url_for('create_quiz') }}" class="btn btn-gradient-primary rounded-pill px-4 mt-3">
+                <i class="bi bi-plus-circle me-2"></i>Create Your First Quiz
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Recent Students -->
+    
+</div>
 
 <!-- Delete Quiz Modals -->
 {% for quiz in quizzes %}
 <div class="modal fade" id="deleteQuiz{{ quiz.id }}" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark text-light">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title">Delete Quiz</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content blur-bg text-white border-0">
+            <div class="modal-header border-bottom" style="border-color: rgba(255,255,255,0.1) !important;">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                    Delete Quiz
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p>Are you sure you want to delete "{{ quiz.title }}"?</p>
-                <p class="text-danger"><small>This action cannot be undone.</small></p>
+                <p>Are you sure you want to delete "<span class="fw-bold">{{ quiz.title }}</span>"?</p>
+                <div class="alert alert-danger bg-danger bg-opacity-25 border-0 text-white">
+                    <i class="bi bi-info-circle me-2"></i>
+                    This action cannot be undone and will remove all associated data.
+                </div>
             </div>
-            <div class="modal-footer border-secondary">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <div class="modal-footer border-top" style="border-color: rgba(255,255,255,0.1) !important;">
+                <button type="button" class="btn btn-outline-light rounded-pill" data-bs-dismiss="modal">
+                    Cancel
+                </button>
                 <form action="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" method="POST" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Delete</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="bi bi-trash me-2"></i>Delete
+                    </button>
                 </form>
             </div>
         </div>
@@ -148,5 +145,139 @@
 </div>
 {% endfor %}
 
-{% endblock %}
+<style>
+/* Dashboard Styles */
+.admin-hero {
+    background: linear-gradient(135deg, #2b5876, #4e4376);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+}
 
+.blur-bg {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+.text-white-60 {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.text-white-80 {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.metric-card {
+    padding: 1.5rem;
+    text-align: center;
+    height: 100%;
+}
+
+.metric-icon {
+    font-size: 2rem;
+    color: #6964de;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: white;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.content-section {
+    padding: 2rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.table-borderless td,
+.table-borderless th {
+    border: 0;
+    padding: 1rem 0.75rem;
+}
+
+.table th {
+    font-weight: bold;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+}
+
+.blur-list {
+    background: transparent;
+}
+
+.list-group-item {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem 0;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.student-avatar-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6964de, #fca5f1);
+    color: white;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+.btn-gradient-primary {
+    background: linear-gradient(135deg, #6964de, #fca5f1);
+    color: white;
+    border: none;
+}
+
+.btn-gradient-primary:hover {
+    color: white;
+    box-shadow: 0 5px 15px rgba(105, 100, 222, 0.4);
+}
+
+.empty-state-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: rgba(255,255,255,0.6);
+}
+</style>
+{% endblock %}

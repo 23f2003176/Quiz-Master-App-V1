@@ -1,0 +1,287 @@
+{% extends 'layout.html' %}
+{% block title %}{{ quiz.title }} - Kuizu{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    <!-- Quiz Header -->
+    <div class="quiz-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="quiz-title">{{ quiz.title }}</h1>
+                {% if current_chapter %}
+                <div class="chapter-badge">
+                    <i class="bi bi-book me-2"></i>{{ current_chapter.title }}
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if time_remaining %}
+            <div class="timer-container">
+                <div class="timer-icon"><i class="bi bi-hourglass-split"></i></div>
+                <div class="timer-display" id="time-remaining">{{ time_remaining }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="quiz-content">
+        <!-- Left Panel: Questions and Navigation -->
+        <div class="quiz-main">
+            <!-- Progress Bar -->
+            <div class="quiz-progress">
+                <div class="progress-stats">
+                    <span>Question {{ current_question + 1 }} of {{ questions|length }}</span>
+                    <span>{{ (((current_question + 1) / questions|length) * 100)|round }}% Complete</span>
+                </div>
+                <div class="progress">
+                    <div class="progress-bar" role="progressbar" 
+                         style="width: {{ ((current_question + 1) / questions|length) * 100 }}%"></div>
+                </div>
+            </div>
+            
+            <!-- Question Navigation -->
+            <div class="question-nav-wrapper">
+                <div class="question-nav-label">
+                    <i class="bi bi-grid me-2"></i>Question Navigator
+                </div>
+                <div class="question-nav-container">
+                    {% for i in range(questions|length) %}
+                    <a href="?question={{ i }}" class="question-nav-btn 
+                        {% if i == current_question %}
+                            active
+                        {% elif i in answered_questions %}
+                            answered
+                        {% elif i in visited_questions %}
+                            visited
+                        {% endif %}">
+                        {{ i + 1 }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Question Content -->
+            <div class="question-card">
+                <div class="question-header">
+                    <h2>Question {{ current_question + 1 }}</h2>
+                    <span class="question-type-badge">{{ current_question_data.question_type }}</span>
+                </div>
+                
+                <div class="question-content">
+                    <p class="question-text">{{ current_question_data.question_text }}</p>
+                    
+                    {% if current_question_data.media_url %}
+                    <div class="question-media">
+                        <img src="{{ url_for('static', filename='uploads/' + current_question_data.media_url) }}" 
+                             alt="Question Image" class="img-fluid">
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Answer Form -->
+                    <form method="POST" action="{{ url_for('start_quiz', quiz_id=quiz.id, chapter_id=current_chapter.id if current_chapter else None) }}" id="questionForm">
+                        <input type="hidden" name="question_id" value="{{ current_question_data.question_id }}">
+                        
+                        <!-- Multiple Choice Options -->
+                        {% if current_question_data.question_type == 'multiple_choice' %}
+                        <div class="answer-options">
+                            {% for answer in answers if answer.question_id == current_question_data.question_id %}
+                            <div class="answer-option">
+                                <input class="form-check-input" type="radio" name="answer" id="answer{{ answer.id }}" value="{{ answer.id }}" 
+                                    {% if answer.id|string in user_answers.get(current_question_data.question_id|string, []) %}checked{% endif %}>
+                                <label class="answer-label" for="answer{{ answer.id }}">
+                                    {{ answer.answer_text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Multiple Select Options -->
+                        {% elif current_question_data.question_type == 'Multiple Select' %}
+                        <div class="answer-options">
+                            {% for answer in answers if answer.question_id == current_question_data.question_id %}
+                            <div class="answer-option">
+                                <input class="form-check-input" type="checkbox" name="answer" id="answer{{ answer.id }}" value="{{ answer.id }}" 
+                                    {% if answer.id|string in user_answers.get(current_question_data.question_id|string, []) %}checked{% endif %}>
+                                <label class="answer-label" for="answer{{ answer.id }}">
+                                    {{ answer.answer_text }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- Text Answer Option -->
+                        {% else %}
+                        <div class="text-answer-container">
+                            <textarea class="form-control" name="answer" rows="4" 
+                                placeholder="Enter your answer here...">{{ user_answers.get(current_question_data.question_id|string, [''])[0] }}</textarea>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Navigation Buttons -->
+                        <div class="quiz-navigation">
+                            <button type="submit" name="action" value="prev" class="btn-quiz-nav prev" 
+                                {% if current_question == 0 %}disabled{% endif %}>
+                                <i class="bi bi-chevron-left"></i> Previous
+                            </button>
+                            
+                            <button type="submit" name="action" value="clear" class="btn-quiz-clear">
+                                <i class="bi bi-eraser"></i> Clear Answer
+                            </button>
+                            
+                            <button type="submit" name="action" value="next" class="btn-quiz-nav next" 
+                                {% if current_question == questions|length - 1 %}disabled{% endif %}>
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel: Quiz Info -->
+        <div class="quiz-sidebar">
+            <!-- Quiz Info Card -->
+            <div class="sidebar-card quiz-info">
+                <div class="sidebar-header">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Quiz Details</span>
+                </div>
+                <div class="sidebar-content">
+                    <ul class="info-list">
+                        <li>
+                            <i class="bi bi-patch-question"></i>
+                            <span>Questions</span>
+                            <span class="info-value">{{ questions|length }}</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-hourglass"></i>
+                            <span>Time Limit</span>
+                            <span class="info-value">{{ quiz.time_limit }} mins</span>
+                        </li>
+                        <li>
+                            <i class="bi bi-award"></i>
+                            <span>Pass Score</span>
+                            <span class="info-value">{{ quiz.passing_score }}%</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Progress Summary -->
+            <div class="sidebar-card progress-summary">
+                <div class="sidebar-header">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Your Progress</span>
+                </div>
+                <div class="sidebar-content">
+                    <div class="progress-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ answered_questions|length }}</div>
+                            <div class="stat-label">Answered</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ visited_questions|length }}</div>
+                            <div class="stat-label">Visited</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ questions|length - visited_questions|length }}</div>
+                            <div class="stat-label">Remaining</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Chapter Info if available -->
+            {% if current_chapter and current_chapter.description %}
+            <div class="sidebar-card chapter-info">
+                <div class="sidebar-header">
+                    <i class="bi bi-book"></i>
+                    <span>Chapter Information</span>
+                </div>
+                <div class="sidebar-content">
+                    <p>{{ current_chapter.description }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Other Chapters -->
+            {% if chapters|length > 1 %}
+            <div class="sidebar-card other-chapters">
+                <div class="sidebar-header">
+                    <i class="bi bi-collection"></i>
+                    <span>Quiz Chapters</span>
+                </div>
+                <div class="sidebar-content">
+                    <ul class="chapters-list">
+                        {% for chapter in chapters %}
+                        <li class="{% if current_chapter and chapter.id == current_chapter.id %}active{% endif %}">
+                            <a href="{{ url_for('start_quiz', quiz_id=quiz.id, chapter_id=chapter.id) }}">
+                                {{ chapter.title }}
+                                <span class="chapter-question-count">{{ chapter.questions|length if chapter.questions else '0' }} Q</span>
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Submit Quiz Button -->
+            <div class="submit-container">
+                <button type="submit" form="questionForm" name="action" value="submit" class="btn-submit-quiz">
+                    <i class="bi bi-check2-circle me-2"></i> Submit Quiz
+                </button>
+                <p class="submit-notice">
+                    <i class="bi bi-exclamation-triangle me-1"></i> 
+                    Once submitted, you cannot change your answers.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Timer Script -->
+{% if time_remaining %}
+<script>
+    // Timer functionality
+    let timeRemaining = "{{ time_remaining }}".split(':');
+    let hours = parseInt(timeRemaining[0]);
+    let minutes = parseInt(timeRemaining[1]);
+    let seconds = parseInt(timeRemaining[2]);
+    let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    
+    const timerDisplay = document.getElementById('time-remaining');
+    const timerContainer = document.querySelector('.timer-container');
+    
+    const timerInterval = setInterval(() => {
+        totalSeconds--;
+        if (totalSeconds <= 0) {
+            clearInterval(timerInterval);
+            document.querySelector('button[value="submit"]').click();
+            return;
+        }
+        
+        hours = Math.floor(totalSeconds / 3600);
+        minutes = Math.floor((totalSeconds % 3600) / 60);
+        seconds = totalSeconds % 60;
+        
+        timerDisplay.textContent = 
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+        // Change color when less than 2 minutes remaining
+        if (totalSeconds < 120) {
+            timerContainer.classList.add('timer-warning');
+        }
+        
+        // Urgent warning when less than 30 seconds
+        if (totalSeconds < 30) {
+            timerContainer.classList.add('timer-danger');
+            // Add pulse animation
+            if (!timerContainer.classList.contains('timer-pulse')) {
+                timerContainer.classList.add('timer-pulse');
+            }
+        }
+    }, 1000);
+</script>
+{% endif %}
+{% endblock %}

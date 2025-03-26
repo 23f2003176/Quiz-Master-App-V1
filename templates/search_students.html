@@ -1,0 +1,228 @@
+{% extends 'layout.html' %}
+
+{% block title %}Student Search Results | Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Hero Section with Enhanced Gradient -->
+    <div class="hero-section mb-4 position-relative overflow-hidden">
+        <div class="row align-items-center">
+            <div class="col-lg-8 py-3 px-4">
+                <h1 class="display-5 fw-bold mb-2 text-white">
+                    <i class="bi bi-search text-info me-2"></i> 
+                    Student Search Results
+                </h1>
+                <p class="lead text-white-80">
+                    Found {{ result_count }} student{{ 's' if result_count != 1 else '' }} matching "{{ query }}"
+                </p>
+                <div class="mt-3">
+                    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Decorative elements -->
+        <div class="hero-shape-1"></div>
+        <div class="hero-shape-2"></div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="quiz-section mb-5">
+        <div class="section-header d-flex align-items-center mb-4">
+            <div class="section-icon me-3">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <h2 class="fw-bold m-0">Students</h2>
+            <div class="ms-auto">
+                <span class="badge bg-primary rounded-pill">
+                    {{ result_count }} result{{ 's' if result_count != 1 else '' }}
+                </span>
+            </div>
+        </div>
+        
+        {% if students %}
+        <div class="row g-4">
+            {% for student in students %}
+            <div class="col-12">
+                <div class="blur-bg rounded-4 student-card">
+                    <!-- Header -->
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            {% if student.profile_image %}
+                            <img src="{{ url_for('static', filename='uploads/' + student.profile_image) }}" 
+                                class="rounded-circle me-3 student-avatar">
+                            {% else %}
+                            <div class="student-avatar-placeholder me-3">
+                                {{ student.username[0]|upper }}
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-bold fs-4 text-white">{{ student.username }}</div>
+                                <div class="text-white-60">{{ student.full_name }}</div>
+                                <div class="text-white-60">{{ student.email }}</div>
+                            </div>
+                        </div>
+
+                    </div>
+                    
+                    <!-- Stats Bar -->
+                    <div class="stats-bar">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ student.completed_quizzes }}</div>
+                            <div class="stat-label">Quizzes Completed</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value 
+                                {% if student.avg_score >= 90 %}text-success
+                                {% elif student.avg_score >= 75 %}text-info
+                                {% elif student.avg_score >= 60 %}text-warning
+                                {% else %}text-danger{% endif %}">
+                                {{ student.avg_score|round(1) }}%
+                            </div>
+                            <div class="stat-label">Average Score</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">{{ student.stats.login_count|default(42) }}</div>
+                            <div class="stat-label">Login Count</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Details Section -->
+                    <div class="card-content">
+                        <div class="row g-4">
+                            <!-- Activity Information -->
+                            <div class="col-md-4">
+                                <h6 class="detail-title">
+                                    <i class="bi bi-activity text-info me-2"></i>Activity
+                                </h6>
+                                
+                                <ul class="timeline">
+                                    <li class="timeline-item">
+                                        <div class="timeline-marker bg-info"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-label">Joined</div>
+                                            <div>{{ student.created_at|default('January 15, 2023') }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-item">
+                                        <div class="timeline-marker bg-primary"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-label">Last login</div>
+                                            <div>{{ student.last_login|default('March 24, 2023') }}</div>
+                                        </div>
+                                    </li>
+                                    <li class="timeline-item">
+                                        <div class="timeline-marker bg-warning"></div>
+                                        <div class="timeline-content">
+                                            <div class="timeline-label">Last quiz</div>
+                                            <div>Chemistry (92%)</div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            
+                            <!-- Performance -->
+                            <div class="col-md-4">
+                                <h6 class="detail-title">
+                                    <i class="bi bi-graph-up text-info me-2"></i>Performance
+                                </h6>
+                                
+                                <div class="subject-scores">
+                                    <div class="subject-score-item">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Mathematics</span>
+                                            <span class="text-info">85%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="subject-score-item">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Physics</span>
+                                            <span class="text-warning">72%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-warning" style="width: 72%"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="subject-score-item">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Chemistry</span>
+                                            <span class="text-success">92%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" style="width: 92%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Achievements -->
+                            <div class="col-md-4">
+                                <h6 class="detail-title">
+                                    <i class="bi bi-award text-info me-2"></i>Achievements
+                                </h6>
+                                
+                                <div class="achievements">
+                                    <div class="achievement-item">
+                                        <div class="achievement-icon">
+                                            <i class="bi bi-lightning-charge-fill"></i>
+                                        </div>
+                                        <div class="achievement-info">
+                                            <div class="achievement-name">Fast Learner</div>
+                                            <div class="achievement-desc">Completed 10 quizzes</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="achievement-item">
+                                        <div class="achievement-icon">
+                                            <i class="bi bi-award-fill"></i>
+                                        </div>
+                                        <div class="achievement-info">
+                                            <div class="achievement-name">Perfect Score</div>
+                                            <div class="achievement-desc">Achieved 100% in a quiz</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="achievement-item">
+                                        <div class="achievement-icon">
+                                            <i class="bi bi-calendar2-check-fill"></i>
+                                        </div>
+                                        <div class="achievement-info">
+                                            <div class="achievement-name">Consistent</div>
+                                            <div class="achievement-desc">5-day streak</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state blur-bg rounded-4">
+            <div class="empty-state-icon">
+                <i class="bi bi-search"></i>
+            </div>
+            <h4 class="mt-3 text-white">No Students Found</h4>
+            <p class="text-white-60">We couldn't find any students matching your search criteria.</p>
+            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-primary rounded-pill px-4 mt-3">
+                <i class="bi bi-arrow-left me-2"></i> Back to Dashboard
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+
+

@@ -1,0 +1,330 @@
+{% extends 'layout.html' %}
+{% block title %}{{ quiz.title }} - Quiz Details - Kuizu{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none"><i class="bi bi-house-door me-1"></i>Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('search_quizzes') }}" class="text-decoration-none">Quizzes</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ quiz.title }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Quiz Header -->
+    <div class="quiz-header-card mb-4">
+        <div class="d-flex flex-wrap align-items-center">
+            <div class="quiz-header-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div class="quiz-header-content">
+                <h1 class="quiz-title mb-2">{{ quiz.title }}</h1>
+                <div class="quiz-meta">
+                    <span class="quiz-meta-item">
+                        <i class="bi bi-calendar3 me-1"></i> Created on {{ quiz.created_at.strftime('%d %b %Y') }}
+                    </span>
+                    {% if quiz.start_time and quiz.end_time %}
+                    <span class="quiz-meta-item">
+                        <i class="bi bi-clock me-1"></i> Available until {{ quiz.end_time.strftime('%d %b %Y, %H:%M') }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if not attempts or attempts|length < max_attempts %}
+            <a href="{{ url_for('start_quiz', quiz_id=quiz.id) }}" class="btn-start-quiz ms-auto">
+                <i class="bi bi-play-fill me-2"></i> Start Quiz
+            </a>
+
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Main Content Column -->
+        <div class="col-lg-8">
+            <!-- Quiz Description -->
+            <div class="details-card mb-4">
+                <div class="details-card-header">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <h2>Quiz Description</h2>
+                </div>
+                <div class="details-card-body">
+                    <p class="quiz-description">{{ quiz.description }}</p>
+                    
+                    {% if quiz.categories %}
+                    <div class="quiz-categories mt-3">
+                        {% for category in quiz.categories %}
+                        <span class="quiz-category-tag">{{ category.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Previous Attempts Section -->
+            {% if attempts %}
+            <div class="details-card mb-4">
+                <div class="details-card-header">
+                    <i class="bi bi-clock-history me-2"></i>
+                    <h2>Your Attempts</h2>
+                </div>
+                <div class="details-card-body">
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Date & Time</th>
+                                    <th>Score</th>
+                                    <th>Time Taken</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in attempts %}
+                                <tr {% if best_attempt and attempt.id == best_attempt.id %}class="highlight-row"{% endif %}>
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <div class="td-content">
+                                            <i class="bi bi-calendar3"></i>
+                                            <span>{{ attempt.start_time.strftime('%d %b %Y, %H:%M') }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if attempt.score is not none %}
+                                        <div class="td-content">
+                                            <div class="score-wrapper">
+                                                <div class="score-value">{{ "%.1f"|format(attempt.score) }}%</div>
+                                                {% if attempt.score >= quiz.passing_score %}
+                                                <span class="status-tag success">Passed</span>
+                                                {% else %}
+                                                <span class="status-tag danger">Failed</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="td-content text-muted">--</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attempt.time_taken %}
+                                        <div class="td-content">
+                                            <i class="bi bi-stopwatch"></i>
+                                            <span>{{ (attempt.time_taken // 60)|int }}m {{ (attempt.time_taken % 60)|int }}s</span>
+                                        </div>
+                                        {% else %}
+                                        <div class="td-content text-muted">--</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if attempt.is_completed %}
+                                        <span class="status-tag success">Completed</span>
+                                        {% else %}
+                                        <span class="status-tag warning">Incomplete</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Chapters Section -->
+            <div class="details-card mb-4">
+                <div class="details-card-header">
+                    <i class="bi bi-book me-2"></i>
+                    <h2>Chapters</h2>
+                </div>
+                <div class="details-card-body">
+                    {% if chapters %}
+                    <div class="row row-cols-1 row-cols-md-2 g-4">
+                        {% for chapter in chapters %}
+                        <div class="col">
+                            <div class="chapter-card">
+                                <div class="chapter-img">
+                                    {% if chapter.Chapter_image %}
+                                    <img src="{{ url_for('static', filename='uploads/' + chapter.Chapter_image) }}" 
+                                         alt="{{ chapter.title }}">
+                                    {% else %}
+                                    <img src="{{ url_for('static', filename='css/images/Kuizu.gif') }}" 
+                                         alt="{{ chapter.title }}">
+                                    {% endif %}
+                                    <div class="chapter-question-count">
+                                        {{ chapter.questions|length }} questions
+                                    </div>
+                                </div>
+                                <div class="chapter-content">
+                                    <h3 class="chapter-title">{{ chapter.title }}</h3>
+                                    {% if chapter.description %}
+                                    <p class="chapter-description">{{ chapter.description|truncate(80) }}</p>
+                                    {% else %}
+                                    <p class="chapter-description text-muted">No description available</p>
+                                    {% endif %}
+                                    
+                                    <a href="{{ url_for('start_quiz', quiz_id=quiz.id, chapter_id=chapter.id) }}" 
+                                       class="chapter-start-btn">
+                                        <i class="bi bi-play-circle"></i> Start Chapter
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i class="bi bi-journal-x"></i>
+                        </div>
+                        <h4>No Chapters Available</h4>
+                        <p>This quiz doesn't have any specific chapters.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            {% if chapters %}
+            <div class="sidebar-card mb-4">
+                <div class="sidebar-card-body text-center p-4">
+                    <a href="{{ url_for('start_quiz', quiz_id=quiz.id) }}" class="btn-full-quiz">
+                        <i class="bi bi-play-circle me-2"></i> Start Full Quiz
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        
+            <!-- Quiz Stats -->
+            <div class="sidebar-card mb-4">
+                <div class="sidebar-card-header">
+                    <i class="bi bi-info-square me-2"></i> Quiz Details
+                </div>
+                <div class="sidebar-card-body p-0">
+                    <ul class="stats-list">
+                        <li>
+                            <div class="stats-icon">
+                                <i class="bi bi-question-diamond"></i>
+                            </div>
+                            <div class="stats-label">Questions</div>
+                            <div class="stats-value">{{ questions|length }}</div>
+                        </li>
+                        <li>
+                            <div class="stats-icon">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div class="stats-label">Time Limit</div>
+                            <div class="stats-value">{{ quiz.time_limit }} min</div>
+                        </li>
+                        <li>
+                            <div class="stats-icon">
+                                <i class="bi bi-trophy"></i>
+                            </div>
+                            <div class="stats-label">Pass Score</div>
+                            <div class="stats-value">{{ quiz.passing_score }}%</div>
+                        </li>
+                        <li>
+                            <div class="stats-icon">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </div>
+                            <div class="stats-label">Max Attempts</div>
+                            <div class="stats-value">
+                                {% set max_att = 0 %}
+                                {% for category in quiz.categories %}
+                                    {% if category.max_attempts and category.max_attempts > max_att %}
+                                        {% set max_att = category.max_attempts %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ max_att if max_att > 0 else "∞" }}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- User Progress -->
+            {% if best_attempt %}
+            <div class="sidebar-card mb-4">
+                <div class="sidebar-card-header">
+                    <i class="bi bi-graph-up me-2"></i> Your Progress
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="mb-3">
+                        <label class="progress-label">Best Score</label>
+                        {% set score_value = best_attempt.score if best_attempt.score is defined and best_attempt.score is not none else 0 %}
+                        {% set passing_score = quiz.passing_score if quiz.passing_score is defined and quiz.passing_score is not none else 50 %}
+                        {% set score_class = "score-success" if score_value >= passing_score else "score-danger" %}
+                        
+                        <div class="score-progress">
+                            <div class="score-bar {{ score_class }} score-width-{{ score_value|int }}"
+                                 data-score="{{ score_value }}">
+                                <span class="score-text">{{ "%.1f"|format(score_value) }}%</span>
+                            </div>
+                        </div>
+                        
+                        <div class="pass-indicator">
+                            <div class="pass-line pass-position-{{ passing_score|int }}" 
+                                 data-passing-score="{{ passing_score }}"></div>
+                            <div class="pass-label pass-position-{{ passing_score|int }}"
+                                 data-passing-score="{{ passing_score }}">
+                                {{ passing_score }}%
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="attempts-counter">
+                        <div class="attempts-label">Your Attempts</div>
+                        <div class="attempts-progress">
+                            {% for i in range(max_att if max_att > 0 else 5) %}
+                                {% if i < attempts|length %}
+                                <div class="attempt-dot active"></div>
+                                {% else %}
+                                <div class="attempt-dot"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="attempts-count">{{ attempts|length }} / {{ max_att if max_att > 0 else "∞" }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Quiz Availability -->
+            {% if quiz.start_time and quiz.end_time %}
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <i class="bi bi-calendar-range me-2"></i> Availability
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="availability">
+                        <div class="availability-item">
+                            <div class="availability-label">
+                                <i class="bi bi-calendar-plus text-success"></i> Starts
+                            </div>
+                            <div class="availability-value">{{ quiz.start_time.strftime('%d %b %Y') }}</div>
+                            <div class="availability-time">{{ quiz.start_time.strftime('%H:%M') }}</div>
+                        </div>
+                        <div class="availability-separator">
+                            <div class="separator-line"></div>
+                        </div>
+                        <div class="availability-item">
+                            <div class="availability-label">
+                                <i class="bi bi-calendar-minus text-danger"></i> Ends
+                            </div>
+                            <div class="availability-value">{{ quiz.end_time.strftime('%d %b %Y') }}</div>
+                            <div class="availability-time">{{ quiz.end_time.strftime('%H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
