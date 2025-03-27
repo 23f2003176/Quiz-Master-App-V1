@@ -1,6 +1,3 @@
-Here’s a **professional, well-structured, and visually appealing README** for your project:
-
----
 
 # 🎯 KUIZU-V1
 
