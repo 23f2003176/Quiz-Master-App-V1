@@ -1,1 +1,1 @@
-# This is QUIZ-MASTER-APP-V1
+# This is KUIZU-V1
