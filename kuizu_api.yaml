@@ -1,0 +1,488 @@
+openapi: 3.0.0
+info:
+  title: Quiz Master API
+  version: "1.0.0"
+  description: >
+    API for managing quizzes, categories, chapters, and scores in the Quiz-Master-App-V1.
+    This API supports endpoints for retrieving categories, quizzes, chapters, and user/quiz scores.
+
+servers:
+  - url: http://localhost:5000
+    description: Local Development Server
+
+paths:
+  /api/categories:
+    get:
+      summary: Retrieve all categories.
+      tags:
+        - Categories
+      responses:
+        "200":
+          description: A list of categories retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+        "500":
+          description: An error occurred while retrieving categories.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+
+  /api/categories/{category_id}:
+    get:
+      summary: Retrieve a specific category.
+      tags:
+        - Categories
+      parameters:
+        - in: path
+          name: category_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the category.
+      responses:
+        "200":
+          description: A specific category retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+        "404":
+          description: Category not found.
+        "500":
+          description: An error occurred while retrieving the category.
+
+  /api/quizzes:
+    get:
+      summary: Retrieve all quizzes.
+      tags:
+        - Quizzes
+      responses:
+        "200":
+          description: A list of quizzes retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        description:
+                          type: string
+                        creator:
+                          type: string
+                        categories:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: integer
+                              name:
+                                type: string
+        "500":
+          description: An error occurred while retrieving quizzes.
+
+  /api/quizzes/{quiz_id}:
+    get:
+      summary: Retrieve a specific quiz.
+      tags:
+        - Quizzes
+      parameters:
+        - in: path
+          name: quiz_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the quiz.
+      responses:
+        "200":
+          description: The quiz details are returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      description:
+                        type: string
+                      creator:
+                        type: string
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                      chapters_count:
+                        type: integer
+                      questions_count:
+                        type: integer
+        "404":
+          description: Quiz not found.
+        "500":
+          description: An error occurred while retrieving the quiz.
+
+  /api/categories/{category_id}/quizzes:
+    get:
+      summary: Retrieve quizzes by category.
+      tags:
+        - Categories
+      parameters:
+        - in: path
+          name: category_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the category.
+      responses:
+        "200":
+          description: Quizzes under the specified category are returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        description:
+                          type: string
+                  category:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+        "404":
+          description: Category not found.
+        "500":
+          description: An error occurred while retrieving quizzes for the category.
+
+  /api/chapters:
+    get:
+      summary: Retrieve all chapters.
+      tags:
+        - Chapters
+      responses:
+        "200":
+          description: A list of chapters retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        quiz_title:
+                          type: string
+        "500":
+          description: An error occurred while retrieving chapters.
+
+  /api/quizzes/{quiz_id}/chapters:
+    get:
+      summary: Retrieve chapters for a specific quiz.
+      tags:
+        - Quizzes
+      parameters:
+        - in: path
+          name: quiz_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the quiz.
+      responses:
+        "200":
+          description: A list of chapters for the quiz is returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        questions_count:
+                          type: integer
+                  quiz:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+        "404":
+          description: Quiz not found.
+        "500":
+          description: An error occurred while retrieving the quiz chapters.
+
+  /api/chapters/{chapter_id}:
+    get:
+      summary: Retrieve a specific chapter.
+      tags:
+        - Chapters
+      parameters:
+        - in: path
+          name: chapter_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the chapter.
+      responses:
+        "200":
+          description: The chapter details are returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      quiz:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          title:
+                            type: string
+                      questions_count:
+                        type: integer
+        "404":
+          description: Chapter not found.
+        "500":
+          description: An error occurred while retrieving the chapter.
+
+  /api/users/{user_id}/scores:
+    get:
+      summary: Retrieve scores and statistics for a specific user.
+      tags:
+        - Scores
+      parameters:
+        - in: path
+          name: user_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the user.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User scores and statistics are returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          username:
+                            type: string
+                          full_name:
+                            type: string
+                      attempts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            attempt_id:
+                              type: integer
+                            quiz_id:
+                              type: integer
+                            quiz_title:
+                              type: string
+                            score:
+                              type: number
+                            start_time:
+                              type: string
+                              format: date-time
+                            end_time:
+                              type: string
+                              format: date-time
+                            time_taken:
+                              type: string
+                      statistics:
+                        type: object
+                        properties:
+                          total_quizzes_taken:
+                            type: integer
+                          total_correct_answers:
+                            type: integer
+                          total_questions_attempted:
+                            type: integer
+                          average_score:
+                            type: number
+                          current_streak:
+                            type: integer
+                          longest_streak:
+                            type: integer
+        "403":
+          description: Permission denied.
+        "500":
+          description: An error occurred while retrieving user scores.
+
+  /api/quizzes/{quiz_id}/scores:
+    get:
+      summary: Retrieve scores and statistics for a specific quiz.
+      tags:
+        - Scores
+      parameters:
+        - in: path
+          name: quiz_id
+          required: true
+          schema:
+            type: integer
+          description: The unique identifier of the quiz.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Quiz scores and statistics are returned successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      quiz:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          title:
+                            type: string
+                          description:
+                            type: string
+                      statistics:
+                        type: object
+                        properties:
+                          total_attempts:
+                            type: integer
+                          average_score:
+                            type: number
+                      attempts:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            attempt_id:
+                              type: integer
+                            user_id:
+                              type: integer
+                            username:
+                              type: string
+                            score:
+                              type: number
+                            start_time:
+                              type: string
+                              format: date-time
+                            end_time:
+                              type: string
+                              format: date-time
+                            time_taken:
+                              type: string
+        "403":
+          description: Permission denied.
+        "500":
+          description: An error occurred while retrieving quiz scores.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
